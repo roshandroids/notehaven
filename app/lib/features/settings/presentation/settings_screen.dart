@@ -225,7 +225,13 @@ class SettingsScreen extends ConsumerWidget {
 }
 
 /// Language names are shown in their own language so they stay findable.
-const languageNames = {'en': 'English', 'es': 'Español', 'fr': 'Français'};
+const languageNames = {
+  'en': 'English',
+  'es': 'Español',
+  'fr': 'Français',
+  'ne': 'नेपाली',
+  'ar': 'العربية',
+};
 
 /// Radio dialog: system default plus each supported language.
 Future<void> _pickLanguage(BuildContext context, WidgetRef ref) async {
