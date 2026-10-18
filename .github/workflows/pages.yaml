@@ -1,15 +1,10 @@
 name: Deploy website
-# Nightly: publishes the web build to GitHub Pages only when main has commits
-# newer than the last successful deploy. Run manually with "force" to redeploy.
+# Publishes the Flutter web build to https://notehaven.rsprojects.dev/ on every push to main.
+# The custom domain comes from app/web/CNAME (copied into the artifact by flutter build web).
 on:
-  schedule:
-    - cron: '0 3 * * *'
+  push:
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      force:
-        description: Deploy even if main has no new commits
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -21,33 +16,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  check:
-    runs-on: ubuntu-latest
-    outputs:
-      deploy: ${{ steps.c.outputs.deploy }}
-    steps:
-      - id: c
-        env:
-          GH_TOKEN: ${{ github.token }}
-          FORCE: ${{ inputs.force }}
-        run: |
-          last=$(gh api "repos/${{ github.repository }}/actions/workflows/pages.yaml/runs?status=success&per_page=1" --jq '.workflow_runs[0].head_sha // ""')
-          head=$(gh api "repos/${{ github.repository }}/commits/main" --jq .sha)
-          if [ "$FORCE" = "true" ] || [ "$last" != "$head" ]; then
-            echo "deploy=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "deploy=false" >> "$GITHUB_OUTPUT"
-            echo "main unchanged since last deploy ($head); skipping"
-          fi
-
   build:
-    needs: check
-    if: needs.check.outputs.deploy == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: main
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: 3.44.8
@@ -55,13 +27,11 @@ jobs:
       - run: FLUTTER=flutter DART=dart scripts/verify.sh
       - name: Build web
         working-directory: app
-        env:
-          # With a custom domain (repo variable PAGES_DOMAIN) the site is at "/".
-          DOMAIN: ${{ vars.PAGES_DOMAIN }}
         run: |
-          if [ -n "$DOMAIN" ]; then base="/"; else base="/${GITHUB_REPOSITORY#*/}/"; fi
-          flutter build web --release --base-href "$base"
+          flutter build web --release --base-href /
+          test -f build/web/CNAME
           cp build/web/index.html build/web/404.html
+      - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: app/build/web

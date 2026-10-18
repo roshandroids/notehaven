@@ -11,7 +11,7 @@ Single source of truth. `CLAUDE.md` and other tool files only point here.
 - `main` is protected: no direct pushes, no deletion; only the repo owner may bypass (force-push).
 - A feature is added only for an open **feature request** issue (`.github/ISSUE_TEMPLATE/feature_request.md`). No request, no feature; agents must ask the user to file or name one first.
 - All changes land through a pull request from a branch named after the issue (`feat/<n>-short-name`, `fix/...`), linking the issue (`Closes #n`), with the `verify` CI check green. Never push to `main`; never commit unless asked.
-- Heavy builds (macOS, Windows, Android) are manual: `release-builds.yaml`. The website deploys nightly via `pages.yaml` only if `main` changed.
+- Heavy builds (macOS, Windows, Android) are manual: `release-builds.yaml`. The website deploys to notehaven.rsprojects.dev via `pages.yaml` on every push to `main`.
 
 ## Gate (must pass before you finish)
 ```bash
