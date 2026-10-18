@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../shared/feedback/ui_feedback.dart';
 import '../../../shared/widgets/search_input.dart';
 import 'settings_providers.dart';
 
@@ -93,7 +93,7 @@ class _FontPickerScreenState extends ConsumerState<FontPickerScreen> {
                             ? const Icon(Icons.check_circle)
                             : null,
                         onTap: () {
-                          HapticFeedback.selectionClick();
+                          ref.read(feedbackProvider).play(FeedbackEvent.select);
                           controller.setFont(null);
                         },
                       );
@@ -112,7 +112,7 @@ class _FontPickerScreenState extends ConsumerState<FontPickerScreen> {
                           ? const Icon(Icons.check_circle)
                           : null,
                       onTap: () {
-                        HapticFeedback.selectionClick();
+                        ref.read(feedbackProvider).play(FeedbackEvent.select);
                         controller.setFont(family);
                       },
                     );

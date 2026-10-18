@@ -10,6 +10,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../shared/feedback/ui_feedback.dart';
 import '../../../shared/layout/layout.dart';
 import '../../../shared/widgets/search_input.dart';
 import '../domain/note.dart';
@@ -31,6 +32,7 @@ class NotesScreen extends ConsumerWidget {
       searchQueryProvider.select((q) => q.trim().isNotEmpty),
     );
     final split = isSplitView(context);
+    void openSettings() => context.push('/settings');
     void newNote() =>
         split ? context.go('/notes/new') : context.push('/notes/new');
 
@@ -38,6 +40,10 @@ class NotesScreen extends ConsumerWidget {
       bindings: {
         const SingleActivator(LogicalKeyboardKey.keyN, meta: true): newNote,
         const SingleActivator(LogicalKeyboardKey.keyN, control: true): newNote,
+        const SingleActivator(LogicalKeyboardKey.comma, meta: true):
+            openSettings,
+        const SingleActivator(LogicalKeyboardKey.comma, control: true):
+            openSettings,
       },
       child: Focus(
         autofocus: true,
@@ -49,7 +55,7 @@ class NotesScreen extends ConsumerWidget {
               IconButton(
                 tooltip: 'Appearance',
                 icon: const Icon(Icons.palette_outlined),
-                onPressed: () => context.push('/settings'),
+                onPressed: openSettings,
               ),
             ],
           ),
@@ -148,10 +154,19 @@ class _EmptyState extends StatelessWidget {
         Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              searching ? Icons.search_off : Icons.edit_note,
-              size: 72,
-              color: theme.colorScheme.outline,
+            _maybeAnimate(
+              context,
+              Icon(
+                searching ? Icons.search_off : Icons.edit_note,
+                size: 72,
+                color: theme.colorScheme.outline,
+              ),
+              (w) => w.animate().scale(
+                delay: 150.ms,
+                duration: 400.ms,
+                curve: Curves.elasticOut,
+                begin: const Offset(0.5, 0.5),
+              ),
             ),
             const SizedBox(height: 12),
             Text(
@@ -211,7 +226,7 @@ class _NoteCard extends ConsumerWidget {
   final bool selected;
 
   Future<void> _delete(BuildContext context, WidgetRef ref) async {
-    HapticFeedback.mediumImpact();
+    final feedback = ref.read(feedbackProvider)..play(FeedbackEvent.delete);
     final actions = ref.read(noteActionsProvider);
     final messenger = ScaffoldMessenger.of(context);
     final failure = await actions.delete(note.id);
@@ -223,7 +238,10 @@ class _NoteCard extends ConsumerWidget {
           action: failure == null
               ? SnackBarAction(
                   label: 'Undo',
-                  onPressed: () => actions.restore(note),
+                  onPressed: () {
+                    feedback.play(FeedbackEvent.undo);
+                    actions.restore(note);
+                  },
                 )
               : null,
         ),
@@ -231,12 +249,49 @@ class _NoteCard extends ConsumerWidget {
   }
 
   Future<void> _duplicate(BuildContext context, WidgetRef ref) async {
-    HapticFeedback.lightImpact();
+    final feedback = ref.read(feedbackProvider);
     final failure = await ref.read(noteActionsProvider).duplicate(note);
-    if (failure != null && context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(failure.message)));
+    feedback.play(
+      failure == null ? FeedbackEvent.success : FeedbackEvent.error,
+    );
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(failure?.message ?? 'Note copied')),
+      );
+  }
+
+  /// Long-press / right-click menu: the same actions as the swipe pane, for
+  /// mouse and keyboard users who cannot swipe.
+  Future<void> _showMenu(BuildContext context, WidgetRef ref) async {
+    ref.read(feedbackProvider).play(FeedbackEvent.tap);
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.copy_outlined),
+              title: const Text('Copy note'),
+              onTap: () => Navigator.pop(context, 'copy'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline),
+              title: const Text('Delete note'),
+              onTap: () => Navigator.pop(context, 'delete'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!context.mounted) return;
+    if (choice == 'copy') {
+      await _duplicate(context, ref);
+    } else if (choice == 'delete') {
+      await _delete(context, ref);
     }
   }
 
@@ -296,6 +351,8 @@ class _NoteCard extends ConsumerWidget {
           color: selected ? scheme.secondaryContainer : null,
           child: InkWell(
             onTap: open,
+            onLongPress: () => _showMenu(context, ref),
+            onSecondaryTap: () => _showMenu(context, ref),
             child: Padding(
               padding: const EdgeInsets.all(14),
               child: Column(

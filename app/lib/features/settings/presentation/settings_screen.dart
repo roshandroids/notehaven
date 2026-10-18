@@ -1,9 +1,9 @@
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../shared/feedback/ui_feedback.dart';
 import '../domain/app_settings.dart';
 import 'settings_providers.dart';
 
@@ -20,6 +20,7 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
     final controller = ref.read(settingsProvider.notifier);
+    final feedback = ref.read(feedbackProvider);
     final theme = Theme.of(context);
     final brightness = theme.brightness;
 
@@ -54,7 +55,7 @@ class SettingsScreen extends ConsumerWidget {
                     ],
                     selected: {settings.themePreference},
                     onSelectionChanged: (s) {
-                      HapticFeedback.selectionClick();
+                      feedback.play(FeedbackEvent.select);
                       controller.setThemePreference(s.first);
                     },
                   ),
@@ -67,6 +68,57 @@ class SettingsScreen extends ConsumerWidget {
                   subtitle: Text(settings.fontFamily ?? 'System default'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => context.push('/settings/font'),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: SwitchListTile(
+                  secondary: const Icon(Icons.vibration),
+                  title: const Text('Haptic feedback'),
+                  subtitle: const Text(
+                    'Vibrate on actions (phones and tablets)',
+                  ),
+                  value: settings.hapticsEnabled,
+                  onChanged: (v) {
+                    controller.setHaptics(v);
+                    if (v) feedback.play(FeedbackEvent.select);
+                  },
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: SwitchListTile(
+                  secondary: const Icon(Icons.volume_up_outlined),
+                  title: const Text('Sounds'),
+                  subtitle: const Text('Short tones for save, delete and undo'),
+                  value: settings.soundsEnabled,
+                  onChanged: (v) {
+                    controller.setSounds(v);
+                    // Preview so the toggle confirms itself.
+                    if (v) feedback.play(FeedbackEvent.success);
+                  },
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: ListTile(
+                  leading: const Icon(Icons.animation),
+                  title: const Text('Animations'),
+                  subtitle: SegmentedButton<MotionPreference>(
+                    showSelectedIcon: false,
+                    segments: const [
+                      ButtonSegment(
+                        value: MotionPreference.system,
+                        label: Text('Follow system'),
+                      ),
+                      ButtonSegment(
+                        value: MotionPreference.reduced,
+                        label: Text('Reduced'),
+                      ),
+                    ],
+                    selected: {settings.motion},
+                    onSelectionChanged: (s) {
+                      feedback.play(FeedbackEvent.select);
+                      controller.setMotion(s.first);
+                    },
+                  ),
                 ),
               ),
               SliverPadding(
@@ -97,7 +149,7 @@ class SettingsScreen extends ConsumerWidget {
                         brightness: brightness,
                         selected: settings.schemeName == scheme.name,
                         onTap: () {
-                          HapticFeedback.selectionClick();
+                          feedback.play(FeedbackEvent.select);
                           controller.setScheme(scheme.name);
                         },
                       ),

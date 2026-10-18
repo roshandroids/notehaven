@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:notehaven_sync/notehaven_sync.dart';
 
 import '../../../core/sync/sync_providers.dart';
+import '../../../shared/layout/layout.dart';
 
 /// App-bar sync indicator; hidden when no backend is configured. Tap to sync
 /// now (the tooltip is also the screen-reader label).
@@ -28,9 +30,22 @@ class SyncStatusButton extends ConsumerWidget {
             : 'Synced ${DateFormat.jm().format(status.lastSyncedAt!)}. Tap to sync now.',
       ),
     };
+    final syncing = status.state == SyncState.syncing;
+    final glyph = Icon(icon, key: ValueKey(status.state));
     return IconButton(
       tooltip: tooltip,
-      icon: Icon(icon),
+      // Spin while syncing; cross-fade between states. State is also in the
+      // tooltip, so nothing depends on the motion.
+      icon: reduceMotion(context)
+          ? glyph
+          : AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              child: syncing
+                  ? glyph
+                        .animate(onPlay: (c) => c.repeat())
+                        .rotate(duration: 1200.ms)
+                  : glyph,
+            ),
       onPressed: status.state == SyncState.syncing ? null : scheduler.syncNow,
     );
   }

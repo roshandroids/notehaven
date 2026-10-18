@@ -13,6 +13,9 @@ import 'package:notehaven_app/features/notes/presentation/drawing/drawing_painte
 import 'package:notehaven_app/features/notes/presentation/note_providers.dart';
 import 'package:notehaven_app/features/settings/data/in_memory_settings_repository.dart';
 import 'package:notehaven_app/features/settings/presentation/settings_providers.dart';
+import 'package:notehaven_app/shared/feedback/ui_feedback.dart';
+
+import '../../../support/fake_feedback.dart';
 
 Future<void> scribble(WidgetTester tester) async {
   final canvas = find.byKey(const Key('drawing-canvas'));
@@ -28,21 +31,26 @@ void main() {
   group('DrawingEditorScreen', () {
     late Drawing? result;
     var returned = false;
+    final feedback = FakeUiFeedback();
+    setUp(feedback.events.clear);
 
     Future<void> open(WidgetTester tester, [Drawing? initial]) async {
       result = null;
       returned = false;
       await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) => Scaffold(
-              body: Center(
-                child: TextButton(
-                  onPressed: () async {
-                    result = await openDrawingEditor(context, initial);
-                    returned = true;
-                  },
-                  child: const Text('open'),
+        ProviderScope(
+          overrides: [feedbackProvider.overrideWithValue(feedback)],
+          child: MaterialApp(
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: Center(
+                  child: TextButton(
+                    onPressed: () async {
+                      result = await openDrawingEditor(context, initial);
+                      returned = true;
+                    },
+                    child: const Text('open'),
+                  ),
                 ),
               ),
             ),
@@ -60,6 +68,32 @@ void main() {
       await tester.pumpAndSettle();
       expect(returned, isTrue);
       expect(result!.strokes, hasLength(1));
+    });
+
+    testWidgets('strokes, tools and save give feedback; clear is undoable', (
+      tester,
+    ) async {
+      await open(tester);
+      await scribble(tester);
+      await tester.tap(find.byTooltip('Highlighter'));
+      await tester.tap(find.byTooltip('Clear drawing'));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('Drawing cleared'), findsOneWidget);
+      tester
+          .widget<SnackBarAction>(find.widgetWithText(SnackBarAction, 'Undo'))
+          .onPressed();
+      await tester.pump();
+      await tester.tap(find.byTooltip('Save drawing'));
+      await tester.pumpAndSettle();
+      expect(result!.strokes, hasLength(1), reason: 'snackbar undo restored');
+      expect(feedback.events, [
+        FeedbackEvent.strokeStart,
+        FeedbackEvent.strokeEnd,
+        FeedbackEvent.select,
+        FeedbackEvent.delete,
+        FeedbackEvent.undo,
+        FeedbackEvent.success,
+      ]);
     });
 
     testWidgets('undo, redo and clear update the buttons', (tester) async {

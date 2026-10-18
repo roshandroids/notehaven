@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 
+import '../../../../shared/layout/layout.dart';
 import '../../domain/drawing.dart';
 import 'drawing_editor_screen.dart';
 import 'drawing_painter.dart';
@@ -61,7 +62,16 @@ class DrawingEmbedBuilder extends EmbedBuilder {
               onTap: embedContext.readOnly
                   ? null
                   : () => _edit(context, embedContext, drawing),
-              child: DrawingThumbnail(drawing: drawing),
+              // Cross-fades when the drawing is edited and re-inserted.
+              child: AnimatedSwitcher(
+                duration: reduceMotion(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 300),
+                child: DrawingThumbnail(
+                  key: ValueKey(embedContext.node.value.data.hashCode),
+                  drawing: drawing,
+                ),
+              ),
             ),
           ),
         ),

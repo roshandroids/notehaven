@@ -4,6 +4,7 @@ import 'package:notehaven_sync/notehaven_sync.dart';
 import '../core/database/app_database.dart';
 import '../core/sync/drift_local_sync_store.dart';
 import '../core/sync/sync_providers.dart';
+import 'feedback_wiring.dart';
 import '../features/notes/data/drift_note_repository.dart';
 import '../features/notes/presentation/note_providers.dart';
 import '../features/settings/data/prefs_settings_repository.dart';
@@ -22,6 +23,7 @@ import '../features/settings/presentation/settings_providers.dart';
 Future<List<Override>> productionOverrides({RemoteNoteStore? remote}) async {
   final db = AppDatabase.open();
   final overrides = <Override>[
+    feedbackPrefsOverride,
     noteRepositoryProvider.overrideWithValue(DriftNoteRepository(db)),
     settingsRepositoryProvider.overrideWithValue(
       await PrefsSettingsRepository.open(),

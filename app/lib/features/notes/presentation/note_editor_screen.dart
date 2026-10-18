@@ -4,6 +4,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../shared/feedback/ui_feedback.dart';
 import '../domain/note.dart';
 import 'drawing/drawing_editor_screen.dart';
 import 'drawing/drawing_embed.dart';
@@ -90,6 +91,8 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
 
   Future<void> _save() async {
+    final feedback = ref.read(feedbackProvider);
+    final messenger = ScaffoldMessenger.of(context);
     final doc = serializeDocument(_quill.document);
     final failure = await ref
         .read(noteActionsProvider)
@@ -101,9 +104,24 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
         );
     if (!mounted) return;
     if (failure == null) {
-      HapticFeedback.lightImpact();
+      feedback.play(FeedbackEvent.success);
       _close();
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle_outline),
+                SizedBox(width: 12),
+                Text('Note saved'),
+              ],
+            ),
+            duration: Duration(seconds: 2),
+          ),
+        );
     } else {
+      feedback.play(FeedbackEvent.error);
       _showMessage(failure.message);
     }
   }
@@ -111,10 +129,12 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
   Future<void> _delete() async {
     final note = widget.note!;
     final actions = ref.read(noteActionsProvider);
+    final feedback = ref.read(feedbackProvider)..play(FeedbackEvent.delete);
     final messenger = ScaffoldMessenger.of(context);
     final failure = await actions.delete(note.id);
     if (!mounted) return;
     if (failure != null) {
+      feedback.play(FeedbackEvent.error);
       _showMessage(failure.message);
       return;
     }
@@ -124,7 +144,10 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
         content: const Text('Note deleted'),
         action: SnackBarAction(
           label: 'Undo',
-          onPressed: () => actions.restore(note),
+          onPressed: () {
+            feedback.play(FeedbackEvent.undo);
+            actions.restore(note);
+          },
         ),
       ),
     );

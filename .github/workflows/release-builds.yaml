@@ -1,0 +1,68 @@
+name: Manual platform builds
+# Never runs automatically (macOS and Windows runners are the expensive ones).
+# Actions tab -> "Manual platform builds" -> Run workflow -> tick platforms.
+on:
+  workflow_dispatch:
+    inputs:
+      macos:
+        description: Build macOS (.app, unsigned)
+        type: boolean
+        default: false
+      windows:
+        description: Build Windows (zip)
+        type: boolean
+        default: false
+      android:
+        description: Build Android (release APK, debug-signed)
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { id: macos, os: macos-latest }
+          - { id: windows, os: windows-latest }
+          - { id: android, os: ubuntu-latest }
+    runs-on: ${{ matrix.os }}
+    # Matrix legs for unticked platforms are skipped without using a runner.
+    if: ${{ inputs[matrix.id] }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.8
+          channel: stable
+      - if: matrix.id == 'android'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - run: flutter pub get
+      - run: dart run build_runner build
+        working-directory: app
+      - if: matrix.id == 'macos'
+        working-directory: app
+        run: |
+          flutter build macos --release
+          ditto -c -k --keepParent build/macos/Build/Products/Release/notehaven_app.app notehaven-macos.zip
+      - if: matrix.id == 'windows'
+        working-directory: app
+        shell: pwsh
+        run: |
+          flutter build windows --release
+          Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath notehaven-windows.zip
+      - if: matrix.id == 'android'
+        working-directory: app
+        run: |
+          flutter build apk --release
+          cp build/app/outputs/flutter-apk/app-release.apk notehaven-android.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: notehaven-${{ matrix.id }}
+          path: |
+            app/notehaven-*.zip
+            app/notehaven-*.apk
+          retention-days: 14

@@ -10,7 +10,8 @@ Use it as a **GitHub template** for your own apps, or read it to learn a layered
 - Appearance: every FlexColorScheme theme (50+), light/dark/system, any Google Font with live previews.
 - Local SQLite (Drift) with the schema dumped for migrations (`app/drift_schemas/`).
 - Backend-agnostic auto sync (off until you configure a backend): engine, REST reference adapter, soft deletes, outbox ([protocol](documentation/sync_protocol.md)).
-- Keyboard shortcuts: Ctrl/Cmd+N new note, Ctrl/Cmd+S save.
+- Feedback: haptics (phones/tablets), optional UI sounds (off by default, generated in code), undo snackbars, long-press/right-click note menu, animated empty state, sync icon and drawing thumbnails; all switchable in Appearance ([ADR-0004](documentation/adr/0004-feedback-haptics-sounds-motion.md)).
+- Keyboard shortcuts: Ctrl/Cmd+N new note, Ctrl/Cmd+S save, Ctrl/Cmd+, appearance.
 - Responsive: one pane on phones, list + editor side by side from 900 px wide.
 - Accessibility: screen-reader labels and actions, tap-target tests, reduce-motion support ([details](documentation/accessibility.md)).
 
@@ -56,7 +57,7 @@ MIT licensed.
 - "Notehaven" and the placeholder app id `org.example` are not trademark-cleared or registered anywhere. Search the
   USPTO/EUIPO/CIPO databases and the App Store / Google Play before shipping under this name, and set your own
   reverse-DNS app id.
-- Bundles `sqlite3.wasm` (SQLite is public domain; sqlite3.dart is MIT) and `drift_worker.js` (drift, MIT). No other third-party assets. Fonts are downloaded at runtime from Google Fonts (open-source licenses, mostly
+- Bundles `sqlite3.wasm` (SQLite is public domain; sqlite3.dart is MIT) and `drift_worker.js` (drift, MIT). UI sounds are short tones synthesized in code at runtime (`app/lib/shared/feedback/tones.dart`), so no audio files are bundled; the `audioplayers` package (MIT) only plays them. No other third-party assets. Fonts are downloaded at runtime from Google Fonts (open-source licenses, mostly
   OFL) when a user picks one; this sends a request to Google's font servers, so mention it in your privacy policy.
   Dependencies keep their own licenses (`flutter pub deps`).
 - Not affiliated with Google, Flutter, or any employer. Do not add code, data or documents from an employer's
