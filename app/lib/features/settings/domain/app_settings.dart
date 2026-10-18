@@ -14,6 +14,7 @@ class AppSettings {
     this.soundsEnabled = false,
     this.motion = MotionPreference.system,
     this.textScale = 1.0,
+    this.localeCode,
   });
 
   /// `FlexScheme` enum name used until the user picks another.
@@ -38,7 +39,11 @@ class AppSettings {
   /// Multiplies the system text size (1.0 = unchanged).
   final double textScale;
 
-  /// Pass `clearFont: true` to go back to the platform default font.
+  /// Language code (`en`, `es`, `fr`), or null to follow the system language.
+  final String? localeCode;
+
+  /// Pass `clearFont: true` / `clearLocale: true` to go back to the platform
+  /// default font / system language.
   AppSettings copyWith({
     ThemePreference? themePreference,
     String? schemeName,
@@ -48,6 +53,8 @@ class AppSettings {
     bool? soundsEnabled,
     MotionPreference? motion,
     double? textScale,
+    String? localeCode,
+    bool clearLocale = false,
   }) => AppSettings(
     themePreference: themePreference ?? this.themePreference,
     schemeName: schemeName ?? this.schemeName,
@@ -56,5 +63,6 @@ class AppSettings {
     soundsEnabled: soundsEnabled ?? this.soundsEnabled,
     motion: motion ?? this.motion,
     textScale: textScale ?? this.textScale,
+    localeCode: clearLocale ? null : (localeCode ?? this.localeCode),
   );
 }

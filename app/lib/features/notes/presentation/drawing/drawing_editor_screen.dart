@@ -10,6 +10,7 @@ import '../../domain/drawing.dart';
 import 'drawing_controller.dart';
 import 'drawing_painter.dart';
 import 'pencil_channel.dart';
+import '../../../../l10n/l10n.dart';
 
 /// Opens the drawing editor above everything (covering the split-view shell).
 /// Resolves to the drawing when saved, or null when cancelled. Saving with no
@@ -66,13 +67,9 @@ class _DrawingEditorScreenState extends ConsumerState<DrawingEditorScreen> {
   void _save() {
     final drawing = _controller.drawing;
     if (!drawing.fitsSizeLimit) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'This drawing is too large to save. Erase or simplify some strokes.',
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.drawingTooLarge)));
       return;
     }
     _feedback.play(FeedbackEvent.success);
@@ -97,9 +94,9 @@ class _DrawingEditorScreenState extends ConsumerState<DrawingEditorScreen> {
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          content: const Text('Drawing cleared'),
+          content: Text(context.l10n.drawingCleared),
           persist: false,
-          action: SnackBarAction(label: 'Undo', onPressed: _undo),
+          action: SnackBarAction(label: context.l10n.undo, onPressed: _undo),
         ),
       );
   }
@@ -109,15 +106,15 @@ class _DrawingEditorScreenState extends ConsumerState<DrawingEditorScreen> {
     final discard = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Discard changes?'),
+        title: Text(context.l10n.discardChanges),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Keep drawing'),
+            child: Text(context.l10n.keepDrawing),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Discard'),
+            child: Text(context.l10n.discard),
           ),
         ],
       ),
@@ -211,29 +208,29 @@ class _DrawingEditorScreenState extends ConsumerState<DrawingEditorScreen> {
                 backgroundColor: scheme.surfaceContainerLow,
                 appBar: AppBar(
                   leading: IconButton(
-                    tooltip: 'Close',
+                    tooltip: context.l10n.close,
                     icon: const Icon(Icons.close),
                     onPressed: () => Navigator.of(context).maybePop(),
                   ),
-                  title: const Text('Drawing'),
+                  title: Text(context.l10n.drawing),
                   actions: [
                     IconButton.outlined(
-                      tooltip: 'Undo',
+                      tooltip: context.l10n.undo,
                       icon: const Icon(Icons.undo),
                       onPressed: _controller.canUndo ? _undo : null,
                     ),
                     IconButton.outlined(
-                      tooltip: 'Redo',
+                      tooltip: context.l10n.redo,
                       icon: const Icon(Icons.redo),
                       onPressed: _controller.canRedo ? _redo : null,
                     ),
                     IconButton.outlined(
-                      tooltip: 'Clear drawing',
+                      tooltip: context.l10n.clearDrawing,
                       icon: const Icon(Icons.delete_sweep_outlined),
                       onPressed: _controller.strokes.isEmpty ? null : _clear,
                     ),
                     IconButton.filled(
-                      tooltip: 'Save drawing',
+                      tooltip: context.l10n.saveDrawing,
                       icon: const Icon(Icons.check),
                       onPressed: _save,
                     ),
@@ -290,8 +287,7 @@ class _Canvas extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label:
-          'Drawing canvas. Freehand drawing needs a touch screen, pen or mouse.',
+      label: context.l10n.drawingCanvas,
       child: LayoutBuilder(
         builder: (context, box) {
           final size = box.biggest;
@@ -342,12 +338,15 @@ class _ToolFabState extends State<_ToolFab> {
   bool _options = false;
 
   static const _icons = {
-    DrawingTool.pen: (Icons.edit, 'Pen'),
-    DrawingTool.highlighter: (Icons.highlight, 'Highlighter'),
-    DrawingTool.eraser: (
-      Icons.cleaning_services_outlined,
-      'Eraser (removes whole strokes)',
-    ),
+    DrawingTool.pen: Icons.edit,
+    DrawingTool.highlighter: Icons.highlight,
+    DrawingTool.eraser: Icons.cleaning_services_outlined,
+  };
+
+  String _toolLabel(AppLocalizations l10n, DrawingTool t) => switch (t) {
+    DrawingTool.pen => l10n.toolPen,
+    DrawingTool.highlighter => l10n.toolHighlighter,
+    DrawingTool.eraser => l10n.toolEraser,
   };
 
   void _toggle() {
@@ -371,7 +370,8 @@ class _ToolFabState extends State<_ToolFab> {
   Widget build(BuildContext context) {
     final c = widget.controller;
     final scheme = Theme.of(context).colorScheme;
-    final (icon, _) = _icons[c.tool]!;
+    final icon = _icons[c.tool]!;
+    final l10n = context.l10n;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -388,7 +388,7 @@ class _ToolFabState extends State<_ToolFab> {
                 child: SizedBox(
                   width: 220,
                   child: Semantics(
-                    label: 'Pen width',
+                    label: l10n.penWidth,
                     child: Slider(
                       min: 0.002,
                       max: 0.03,
@@ -437,7 +437,7 @@ class _ToolFabState extends State<_ToolFab> {
               i,
               FloatingActionButton.small(
                 heroTag: 'tool-${t.name}',
-                tooltip: _icons[t]!.$2,
+                tooltip: _toolLabel(l10n, t),
                 backgroundColor: c.tool == t
                     ? scheme.primaryContainer
                     : scheme.surfaceContainerHigh,
@@ -450,7 +450,7 @@ class _ToolFabState extends State<_ToolFab> {
                   c.selectTool(t);
                   setState(() => _options = again && !_options);
                 },
-                child: Icon(_icons[t]!.$1),
+                child: Icon(_icons[t]),
               ),
             ),
             const SizedBox(height: 8),
@@ -458,7 +458,7 @@ class _ToolFabState extends State<_ToolFab> {
         ],
         FloatingActionButton(
           heroTag: 'tool-main',
-          tooltip: _open ? 'Hide tools' : 'Drawing tools',
+          tooltip: _open ? l10n.hideTools : l10n.drawingTools,
           onPressed: _toggle,
           child: AnimatedSwitcher(
             duration: 200.ms,
@@ -509,13 +509,14 @@ class _Swatch extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
-  static const _names = {
-    0xFF000000: 'black',
-    0xFFD32F2F: 'red',
-    0xFF1976D2: 'blue',
-    0xFF388E3C: 'green',
-    0xFFF57C00: 'orange',
-    0xFF7B1FA2: 'purple',
+  static String _name(AppLocalizations l10n, int argb) => switch (argb) {
+    0xFF000000 => l10n.colorBlack,
+    0xFFD32F2F => l10n.colorRed,
+    0xFF1976D2 => l10n.colorBlue,
+    0xFF388E3C => l10n.colorGreen,
+    0xFFF57C00 => l10n.colorOrange,
+    0xFF7B1FA2 => l10n.colorPurple,
+    _ => l10n.colorCustom,
   };
 
   @override
@@ -524,7 +525,7 @@ class _Swatch extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: 'Color ${_names[argb] ?? 'custom'}',
+      label: context.l10n.colorName(_name(context.l10n, argb)),
       excludeSemantics: true,
       onTap: onTap,
       child: InkResponse(

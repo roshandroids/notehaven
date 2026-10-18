@@ -16,6 +16,7 @@ import 'package:notehaven_app/features/settings/presentation/settings_providers.
 import 'package:notehaven_app/shared/feedback/ui_feedback.dart';
 
 import '../../../support/fake_feedback.dart';
+import 'package:notehaven_app/l10n/app_localizations.dart';
 
 Future<void> scribble(WidgetTester tester) async {
   final canvas = find.byKey(const Key('drawing-canvas'));
@@ -41,6 +42,8 @@ void main() {
         ProviderScope(
           overrides: [feedbackProvider.overrideWithValue(feedback)],
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Builder(
               builder: (context) => Scaffold(
                 body: Center(

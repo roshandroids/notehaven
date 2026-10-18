@@ -8,3 +8,4 @@ coverage/
 .DS_Store
 pubspec.lock.bak
 *.g.dart
+app/lib/l10n/app_localizations*.dart

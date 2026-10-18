@@ -15,6 +15,7 @@ import '../../../shared/crash/crash_log.dart';
 import '../../../shared/feedback/custom_sounds.dart';
 import '../../../shared/update/update_checker.dart';
 import 'custom_sounds_dialog.dart';
+import '../../../l10n/l10n.dart';
 import 'settings_providers.dart';
 import 'storage_usage.dart';
 
@@ -27,6 +28,7 @@ class SettingsScreen extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final controller = ref.read(settingsProvider.notifier);
     final feedback = ref.read(feedbackProvider);
+    final l10n = context.l10n;
 
     Widget item(Widget child) => SliverToBoxAdapter(child: child);
 
@@ -36,28 +38,28 @@ class SettingsScreen extends ConsumerWidget {
           constraints: const BoxConstraints(maxWidth: 840),
           child: CustomScrollView(
             slivers: [
-              const SliverAppBar(pinned: true, title: Text('Settings')),
-              const _Header('Appearance'),
+              SliverAppBar(pinned: true, title: Text(l10n.settings)),
+              _Header(l10n.appearance),
               item(
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
                   child: SegmentedButton<ThemePreference>(
                     showSelectedIcon: false,
-                    segments: const [
+                    segments: [
                       ButtonSegment(
                         value: ThemePreference.system,
-                        icon: Icon(Icons.brightness_auto),
-                        label: Text('System'),
+                        icon: const Icon(Icons.brightness_auto),
+                        label: Text(l10n.themeSystem),
                       ),
                       ButtonSegment(
                         value: ThemePreference.light,
-                        icon: Icon(Icons.light_mode),
-                        label: Text('Light'),
+                        icon: const Icon(Icons.light_mode),
+                        label: Text(l10n.themeLight),
                       ),
                       ButtonSegment(
                         value: ThemePreference.dark,
-                        icon: Icon(Icons.dark_mode),
-                        label: Text('Dark'),
+                        icon: const Icon(Icons.dark_mode),
+                        label: Text(l10n.themeDark),
                       ),
                     ],
                     selected: {settings.themePreference},
@@ -71,7 +73,7 @@ class SettingsScreen extends ConsumerWidget {
               item(
                 ListTile(
                   leading: const Icon(Icons.palette_outlined),
-                  title: const Text('Color theme'),
+                  title: Text(l10n.colorTheme),
                   subtitle: Text(
                     FlexColor.schemes[flexSchemeFor(settings.schemeName)]!.name,
                   ),
@@ -82,16 +84,27 @@ class SettingsScreen extends ConsumerWidget {
               item(
                 ListTile(
                   leading: const Icon(Icons.font_download_outlined),
-                  title: const Text('Font'),
-                  subtitle: Text(settings.fontFamily ?? 'System default'),
+                  title: Text(l10n.font),
+                  subtitle: Text(settings.fontFamily ?? l10n.systemDefault),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => context.push('/settings/font'),
                 ),
               ),
               item(
                 ListTile(
+                  leading: const Icon(Icons.language),
+                  title: Text(l10n.language),
+                  subtitle: Text(
+                    languageNames[settings.localeCode] ?? l10n.systemDefault,
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _pickLanguage(context, ref),
+                ),
+              ),
+              item(
+                ListTile(
                   leading: const Icon(Icons.format_size),
-                  title: const Text('Text size'),
+                  title: Text(l10n.textSize),
                   subtitle: Slider(
                     value: settings.textScale,
                     min: 0.8,
@@ -106,19 +119,19 @@ class SettingsScreen extends ConsumerWidget {
               item(
                 ListTile(
                   leading: const Icon(Icons.grid_view_outlined),
-                  title: const Text('Note layout'),
+                  title: Text(l10n.noteLayout),
                   trailing: SegmentedButton<bool>(
                     showSelectedIcon: false,
-                    segments: const [
+                    segments: [
                       ButtonSegment(
                         value: true,
-                        icon: Icon(Icons.grid_view_outlined),
-                        tooltip: 'Grid view',
+                        icon: const Icon(Icons.grid_view_outlined),
+                        tooltip: l10n.gridView,
                       ),
                       ButtonSegment(
                         value: false,
-                        icon: Icon(Icons.view_agenda_outlined),
-                        tooltip: 'List view',
+                        icon: const Icon(Icons.view_agenda_outlined),
+                        tooltip: l10n.listView,
                       ),
                     ],
                     selected: {ref.watch(gridViewProvider)},
@@ -131,14 +144,12 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-              const _Header('Feedback'),
+              _Header(l10n.feedbackGroup),
               item(
                 SwitchListTile(
                   secondary: const Icon(Icons.vibration),
-                  title: const Text('Haptic feedback'),
-                  subtitle: const Text(
-                    'Vibrate on actions (phones and tablets)',
-                  ),
+                  title: Text(l10n.hapticFeedback),
+                  subtitle: Text(l10n.hapticSubtitle),
                   value: settings.hapticsEnabled,
                   onChanged: (v) {
                     controller.setHaptics(v);
@@ -149,8 +160,8 @@ class SettingsScreen extends ConsumerWidget {
               item(
                 SwitchListTile(
                   secondary: const Icon(Icons.volume_up_outlined),
-                  title: const Text('Sounds'),
-                  subtitle: const Text('Short tones for save, delete and undo'),
+                  title: Text(l10n.sounds),
+                  subtitle: Text(l10n.soundsSubtitle),
                   value: settings.soundsEnabled,
                   onChanged: (v) {
                     controller.setSounds(v);
@@ -163,8 +174,8 @@ class SettingsScreen extends ConsumerWidget {
                 item(
                   ListTile(
                     leading: const Icon(Icons.library_music_outlined),
-                    title: const Text('Custom sounds'),
-                    subtitle: const Text('Use your own audio files'),
+                    title: Text(l10n.customSounds),
+                    subtitle: Text(l10n.customSoundsSubtitle),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => showDialog<void>(
                       context: context,
@@ -175,17 +186,17 @@ class SettingsScreen extends ConsumerWidget {
               item(
                 ListTile(
                   leading: const Icon(Icons.animation),
-                  title: const Text('Animations'),
+                  title: Text(l10n.animations),
                   subtitle: SegmentedButton<MotionPreference>(
                     showSelectedIcon: false,
-                    segments: const [
+                    segments: [
                       ButtonSegment(
                         value: MotionPreference.system,
-                        label: Text('Follow system'),
+                        label: Text(l10n.followSystem),
                       ),
                       ButtonSegment(
                         value: MotionPreference.reduced,
-                        label: Text('Reduced'),
+                        label: Text(l10n.reduced),
                       ),
                     ],
                     selected: {settings.motion},
@@ -196,10 +207,10 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-              const _Header('Data'),
+              _Header(l10n.dataGroup),
               item(const _StorageTile()),
               item(const _DeleteAllTile()),
-              const _Header('About'),
+              _Header(l10n.aboutGroup),
               item(const _AboutTile()),
               item(const _UpdateTile()),
               item(const _LicensesTile()),
@@ -211,6 +222,37 @@ class SettingsScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Language names are shown in their own language so they stay findable.
+const languageNames = {'en': 'English', 'es': 'Español', 'fr': 'Français'};
+
+/// Radio dialog: system default plus each supported language.
+Future<void> _pickLanguage(BuildContext context, WidgetRef ref) async {
+  final l10n = context.l10n;
+  final current = ref.read(settingsProvider).localeCode;
+  final picked = await showDialog<String?>(
+    context: context,
+    builder: (context) => SimpleDialog(
+      title: Text(l10n.language),
+      children: [
+        for (final entry in {
+          null: l10n.systemDefault,
+          ...languageNames,
+        }.entries)
+          ListTile(
+            key: ValueKey('language-${entry.key ?? 'system'}'),
+            title: Text(entry.value),
+            trailing: entry.key == current
+                ? const Icon(Icons.check_circle)
+                : null,
+            onTap: () => Navigator.pop(context, entry.key ?? ''),
+          ),
+      ],
+    ),
+  );
+  if (picked == null) return; // dismissed
+  ref.read(settingsProvider.notifier).setLocale(picked.isEmpty ? null : picked);
 }
 
 /// Group label above a block of settings.
@@ -244,11 +286,12 @@ class _StorageTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final usage = ref.watch(storageUsageProvider).value;
     if (usage == null) return const SizedBox.shrink();
+    final l10n = context.l10n;
     return ListTile(
       leading: const Icon(Icons.storage_outlined),
-      title: const Text('Storage'),
+      title: Text(l10n.storage),
       subtitle: Text(
-        'Notes ${formatBytes(usage.notes)} · Cache ${formatBytes(usage.cache)}',
+        l10n.storageUsage(formatBytes(usage.notes), formatBytes(usage.cache)),
       ),
       trailing: OutlinedButton(
         onPressed: usage.cache == 0
@@ -259,11 +302,9 @@ class _StorageTile extends ConsumerWidget {
                 if (!context.mounted) return;
                 ScaffoldMessenger.of(context)
                   ..hideCurrentSnackBar()
-                  ..showSnackBar(
-                    const SnackBar(content: Text('Cache cleared')),
-                  );
+                  ..showSnackBar(SnackBar(content: Text(l10n.cacheCleared)));
               },
-        child: const Text('Clear cache'),
+        child: Text(l10n.clearCache),
       ),
     );
   }
@@ -276,22 +317,23 @@ class _DeleteAllTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = context.l10n;
     return ListTile(
       leading: Icon(Icons.delete_forever_outlined, color: scheme.error),
-      title: const Text('Delete all notes'),
-      subtitle: const Text('Removes every note from this device'),
+      title: Text(l10n.deleteAllNotes),
+      subtitle: Text(l10n.deleteAllSubtitle),
       onTap: () async {
         final actions = ref.read(noteActionsProvider);
         final messenger = ScaffoldMessenger.of(context);
         final ok = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Delete all notes?'),
-            content: const Text('You can undo right after.'),
+            title: Text(l10n.deleteAllTitle),
+            content: Text(l10n.undoRightAfter),
             actions: [
               OutlinedButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
+                child: Text(l10n.cancel),
               ),
               FilledButton(
                 style: FilledButton.styleFrom(
@@ -299,7 +341,7 @@ class _DeleteAllTile extends ConsumerWidget {
                   foregroundColor: scheme.onError,
                 ),
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('Delete all'),
+                child: Text(l10n.deleteAll),
               ),
             ],
           ),
@@ -311,10 +353,10 @@ class _DeleteAllTile extends ConsumerWidget {
           ..hideCurrentSnackBar()
           ..showSnackBar(
             SnackBar(
-              content: Text('${deleted.length} notes deleted'),
+              content: Text(l10n.notesDeleted(deleted.length)),
               persist: false,
               action: SnackBarAction(
-                label: 'Undo',
+                label: l10n.undo,
                 onPressed: () async {
                   for (final n in deleted) {
                     await actions.restore(n);
@@ -335,6 +377,7 @@ class _AboutTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return FutureBuilder<String>(
       future: rootBundle.loadString('assets/CHANGELOG.md'),
       builder: (context, snap) {
@@ -345,8 +388,10 @@ class _AboutTile extends StatelessWidget {
         ).firstMatch(log)?.group(1);
         return ListTile(
           leading: const Icon(Icons.info_outline),
-          title: const Text('About'),
-          subtitle: Text(version == null ? 'Note Haven' : 'Version $version'),
+          title: Text(l10n.about),
+          subtitle: Text(
+            version == null ? l10n.appTitle : l10n.version(version),
+          ),
           onTap: log.isEmpty
               ? null
               : () => showDialog<void>(
@@ -368,6 +413,7 @@ class _AboutDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final rows = <Widget>[];
     for (final line in log.split('\n')) {
       if (line.startsWith('## ')) {
@@ -414,14 +460,14 @@ class _AboutDialog extends StatelessWidget {
     }
     return AlertDialog(
       icon: const Icon(Icons.edit_note, size: 40),
-      title: const Text('Note Haven'),
+      title: Text(l10n.appTitle),
       content: SizedBox(
         width: 420,
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('What\'s new', style: theme.textTheme.titleMedium),
+              Text(l10n.whatsNew, style: theme.textTheme.titleMedium),
               ...rows,
             ],
           ),
@@ -430,7 +476,7 @@ class _AboutDialog extends StatelessWidget {
       actions: [
         FilledButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Close'),
+          child: Text(l10n.close),
         ),
       ],
     );
@@ -457,6 +503,7 @@ class _UpdateTileState extends ConsumerState<_UpdateTile> {
 
   Future<void> _check() async {
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     final current = await ref.read(appVersionProvider.future) ?? '0.0.0';
     setState(() => _checking = true);
     String? message;
@@ -466,12 +513,10 @@ class _UpdateTileState extends ConsumerState<_UpdateTile> {
       if (latest != null && isNewerVersion(latest.version, current)) {
         update = latest;
       } else {
-        message = latest == null
-            ? 'No releases published yet'
-            : 'You are up to date (v$current)';
+        message = latest == null ? l10n.noReleases : l10n.upToDate(current);
       }
     } on Object {
-      message = 'Could not check for updates. Try again later.';
+      message = l10n.updateCheckFailed;
     }
     if (!mounted) return;
     setState(() => _checking = false);
@@ -486,19 +531,19 @@ class _UpdateTileState extends ConsumerState<_UpdateTile> {
       context: context,
       builder: (context) => AlertDialog(
         icon: const Icon(Icons.system_update_alt, size: 40),
-        title: Text('Version ${found.version} is available'),
-        content: Text('You have v$current.'),
+        title: Text(l10n.updateAvailable(found.version)),
+        content: Text(l10n.youHave(current)),
         actions: [
           OutlinedButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Later'),
+            child: Text(l10n.later),
           ),
           FilledButton(
             onPressed: () {
               launchUrl(Uri.parse(found.url));
               Navigator.pop(context);
             },
-            child: const Text('Download'),
+            child: Text(l10n.download),
           ),
         ],
       ),
@@ -508,7 +553,7 @@ class _UpdateTileState extends ConsumerState<_UpdateTile> {
   @override
   Widget build(BuildContext context) => ListTile(
     leading: const Icon(Icons.system_update_alt),
-    title: const Text('Check for updates'),
+    title: Text(context.l10n.checkForUpdates),
     trailing: _checking
         ? const SizedBox.square(
             dimension: 24,
@@ -527,12 +572,12 @@ class _LicensesTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) => ListTile(
     leading: const Icon(Icons.gavel_outlined),
-    title: const Text('Licenses'),
-    subtitle: const Text('Open-source licenses'),
+    title: Text(context.l10n.licenses),
+    subtitle: Text(context.l10n.openSourceLicenses),
     trailing: const Icon(Icons.chevron_right),
     onTap: () => showLicensePage(
       context: context,
-      applicationName: 'Note Haven',
+      applicationName: context.l10n.appTitle,
       applicationVersion: ref.read(appVersionProvider).value,
       applicationLegalese: '© 2026 Notehaven contributors · MIT License',
     ),
@@ -550,21 +595,22 @@ class _CrashTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final log = ref.read(crashLogProvider);
+    final l10n = context.l10n;
     final entries = ref.watch(crashEntriesProvider).value ?? const <String>[];
     return ListTile(
       leading: const Icon(Icons.bug_report_outlined),
-      title: const Text('Error reports'),
+      title: Text(l10n.errorReports),
       subtitle: Text(
         entries.isEmpty
-            ? 'No errors recorded'
-            : '${entries.length} recorded on this device',
+            ? l10n.noErrorsRecorded
+            : l10n.errorsRecorded(entries.length),
       ),
       onTap: entries.isEmpty
           ? null
           : () => showDialog<void>(
               context: context,
               builder: (context) => AlertDialog(
-                title: const Text('Error reports'),
+                title: Text(l10n.errorReports),
                 content: SizedBox(
                   width: 480,
                   child: SingleChildScrollView(
@@ -581,16 +627,16 @@ class _CrashTile extends ConsumerWidget {
                       ref.invalidate(crashEntriesProvider);
                       if (context.mounted) Navigator.pop(context);
                     },
-                    child: const Text('Clear'),
+                    child: Text(l10n.clear),
                   ),
                   FilledButton(
                     onPressed: () => SharePlus.instance.share(
                       ShareParams(
                         text: entries.join('\n\n---\n\n'),
-                        subject: 'Note Haven error report',
+                        subject: l10n.errorReportSubject,
                       ),
                     ),
-                    child: const Text('Share'),
+                    child: Text(l10n.share),
                   ),
                 ],
               ),

@@ -105,6 +105,7 @@ void main() {
           soundsEnabled: true,
           motion: MotionPreference.reduced,
           textScale: 1.2,
+          localeCode: 'es',
         ),
       );
       final loaded = (await PrefsSettingsRepository.open()).load();
@@ -115,6 +116,7 @@ void main() {
       expect(loaded.soundsEnabled, isTrue);
       expect(loaded.motion, MotionPreference.reduced);
       expect(loaded.textScale, 1.2);
+      expect(loaded.localeCode, 'es');
     });
   });
 
@@ -221,6 +223,39 @@ void main() {
     await tester.tap(find.text('Dark'));
     await tester.pumpAndSettle();
     expect(settingsRepo.settings.themePreference, ThemePreference.dark);
+  });
+
+  testWidgets('picking a language switches the UI and persists', (
+    tester,
+  ) async {
+    final settingsRepo = InMemorySettingsRepository();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          noteRepositoryProvider.overrideWithValue(InMemoryNoteRepository()),
+          settingsRepositoryProvider.overrideWithValue(settingsRepo),
+        ],
+        child: const App(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Language'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Español'));
+    await tester.pumpAndSettle();
+
+    expect(settingsRepo.settings.localeCode, 'es');
+    expect(find.text('Idioma'), findsOneWidget);
+    expect(find.text('Ajustes'), findsOneWidget);
+
+    await tester.tap(find.text('Idioma'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Predeterminado del sistema').last);
+    await tester.pumpAndSettle();
+    expect(settingsRepo.settings.localeCode, isNull);
   });
 
   group('NoteActions.deleteAll', () {

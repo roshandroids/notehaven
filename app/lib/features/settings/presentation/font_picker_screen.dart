@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../shared/feedback/ui_feedback.dart';
 import '../../../shared/widgets/search_input.dart';
 import 'settings_providers.dart';
+import '../../../l10n/l10n.dart';
 
 /// Popular families shown with a live preview. Entries missing from the
 /// installed google_fonts version are dropped at runtime.
@@ -105,7 +106,7 @@ class _FontPickerScreenState extends ConsumerState<FontPickerScreen> {
             slivers: [
               SliverAppBar(
                 pinned: true,
-                title: const Text('Font'),
+                title: Text(context.l10n.font),
                 actions: [
                   ValueListenableBuilder(
                     valueListenable: _searchHidden,
@@ -116,7 +117,7 @@ class _FontPickerScreenState extends ConsumerState<FontPickerScreen> {
                               key: const ValueKey('search-action'),
                               padding: const EdgeInsets.only(right: 12),
                               child: IconButton.filledTonal(
-                                tooltip: 'Search fonts',
+                                tooltip: context.l10n.searchFonts,
                                 icon: const Icon(Icons.search),
                                 onPressed: _jumpToSearch,
                               ),
@@ -131,7 +132,7 @@ class _FontPickerScreenState extends ConsumerState<FontPickerScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                   child: SearchInput(
                     focusNode: _searchFocus,
-                    hintText: 'Search ${_all.length} Google Fonts',
+                    hintText: context.l10n.searchGoogleFonts(_all.length),
                     onChanged: (v) => setState(() => _query = v),
                   ),
                 ),
@@ -142,7 +143,7 @@ class _FontPickerScreenState extends ConsumerState<FontPickerScreen> {
                 itemBuilder: (context, i) {
                   if (preview && i == 0) {
                     return ListTile(
-                      title: const Text('System default'),
+                      title: Text(context.l10n.systemDefault),
                       trailing: selected == null
                           ? const Icon(Icons.check_circle)
                           : null,
@@ -158,7 +159,7 @@ class _FontPickerScreenState extends ConsumerState<FontPickerScreen> {
                     title: Text(family),
                     subtitle: preview
                         ? Text(
-                            'The quick brown fox jumps over the lazy dog',
+                            context.l10n.fontPreview,
                             style: GoogleFonts.getFont(family),
                           )
                         : null,

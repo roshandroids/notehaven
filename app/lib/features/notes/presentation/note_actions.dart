@@ -33,11 +33,10 @@ class NoteActions {
     return result.fold<Failure?>((_) => null, (f) => f);
   }
 
-  /// Creates a copy of [note] titled "<title> (copy)".
-  Future<Failure?> duplicate(Note note) async {
-    final title = note.title.isEmpty ? 'Untitled' : note.title;
+  /// Creates a copy of [note] with the already-localized [title].
+  Future<Failure?> duplicate(Note note, String title) async {
     final result = await _repository.create(
-      '$title (copy)',
+      title,
       note.body,
       content: note.content,
     );

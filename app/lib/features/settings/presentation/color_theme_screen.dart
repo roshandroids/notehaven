@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/feedback/ui_feedback.dart';
 import 'settings_providers.dart';
+import '../../../l10n/l10n.dart';
 
 /// Pick a color theme: every FlexColorScheme preset except `custom`, with a
 /// swatch preview in the current brightness.
@@ -24,7 +25,7 @@ class ColorThemeScreen extends ConsumerWidget {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          const SliverAppBar(pinned: true, title: Text('Color theme')),
+          SliverAppBar(pinned: true, title: Text(context.l10n.colorTheme)),
           SliverPadding(
             padding: const EdgeInsets.all(16),
             sliver: SliverGrid.builder(
@@ -80,7 +81,7 @@ class _SchemeTile extends StatelessWidget {
     return Semantics(
       selected: selected,
       button: true,
-      label: '${data.name} color theme',
+      label: context.l10n.colorThemeLabel(data.name),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(

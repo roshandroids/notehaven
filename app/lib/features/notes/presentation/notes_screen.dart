@@ -21,6 +21,7 @@ import '../domain/note.dart';
 import 'note_actions.dart';
 import 'note_providers.dart';
 import 'sync_status_button.dart';
+import '../../../l10n/l10n.dart';
 
 /// Note list: masonry grid, debounced search, swipe actions, Ctrl/Cmd+N.
 class NotesScreen extends ConsumerWidget {
@@ -60,7 +61,7 @@ class NotesScreen extends ConsumerWidget {
             FloatingActionButton.extended(
               onPressed: newNote,
               icon: const Icon(Icons.add),
-              label: const Text('New note'),
+              label: Text(context.l10n.newNote),
             ),
             (w) => w.animate().scale(
               duration: 300.ms,
@@ -80,7 +81,7 @@ class NotesScreen extends ConsumerWidget {
                 actions: [
                   const SyncStatusButton(),
                   IconButton.filledTonal(
-                    tooltip: 'Settings',
+                    tooltip: context.l10n.settingsTooltip,
                     icon: const Icon(Icons.settings_outlined),
                     onPressed: openSettings,
                   ),
@@ -115,7 +116,7 @@ class NotesScreen extends ConsumerWidget {
                     hasScrollBody: false,
                     child: IllustratedMessage(
                       kind: IllustrationKind.error,
-                      title: 'Could not load notes',
+                      title: context.l10n.couldNotLoadNotes,
                       subtitle: '$e',
                     ),
                   ),
@@ -166,7 +167,7 @@ class _SearchFieldState extends ConsumerState<_SearchField> {
   Widget build(BuildContext context) {
     return SearchInput(
       key: const Key('search'),
-      hintText: 'Search notes',
+      hintText: context.l10n.searchNotes,
       onChanged: _onChanged,
     );
   }
@@ -180,8 +181,8 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) => IllustratedMessage(
     kind: searching ? IllustrationKind.search : IllustrationKind.onboarding,
-    title: searching ? 'No matching notes' : 'Welcome to Note Haven',
-    subtitle: searching ? null : 'Notes you add appear here',
+    title: searching ? context.l10n.noMatchingNotes : context.l10n.welcome,
+    subtitle: searching ? null : context.l10n.notesAppearHere,
   );
 }
 
@@ -266,6 +267,7 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
     final feedback = ref.read(feedbackProvider)..play(FeedbackEvent.delete);
     final actions = ref.read(noteActionsProvider);
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     if (!reduceMotion(context)) {
       setState(() => _leaving = true);
       await Future<void>.delayed(AppMotion.medium);
@@ -276,11 +278,11 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          content: Text(failure?.message ?? 'Note deleted'),
+          content: Text(failure?.message ?? l10n.noteDeleted),
           persist: false,
           action: failure == null
               ? SnackBarAction(
-                  label: 'Undo',
+                  label: l10n.undo,
                   onPressed: () {
                     feedback.play(FeedbackEvent.undo);
                     actions.restore(note);
@@ -293,7 +295,10 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
 
   Future<void> _duplicate(BuildContext context, WidgetRef ref) async {
     final feedback = ref.read(feedbackProvider);
-    final failure = await ref.read(noteActionsProvider).duplicate(note);
+    final l10n = context.l10n;
+    final failure = await ref
+        .read(noteActionsProvider)
+        .duplicate(note, l10n.copyTitle(_displayTitle(l10n)));
     feedback.play(
       failure == null ? FeedbackEvent.success : FeedbackEvent.error,
     );
@@ -301,12 +306,15 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        SnackBar(content: Text(failure?.message ?? 'Note copied')),
+        SnackBar(content: Text(failure?.message ?? l10n.noteCopied)),
       );
   }
 
-  String get _shareText {
-    final title = note.title.isEmpty ? 'Untitled' : note.title;
+  String _displayTitle(AppLocalizations l10n) =>
+      note.title.isEmpty ? l10n.untitled : note.title;
+
+  String _shareText(AppLocalizations l10n) {
+    final title = _displayTitle(l10n);
     return note.body.isEmpty ? title : '$title\n\n${note.body}';
   }
 
@@ -321,6 +329,7 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
     final overlay =
         Overlay.of(context).context.findRenderObject()! as RenderBox;
     final danger = Theme.of(context).colorScheme.error;
+    final l10n = context.l10n;
     PopupMenuItem<String> item(
       String v,
       IconData icon,
@@ -343,12 +352,12 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
         Offset.zero & overlay.size,
       ),
       items: [
-        item('open', Icons.edit_outlined, 'Open'),
-        item('copy', Icons.copy_outlined, 'Copy note'),
-        item('share', Icons.ios_share, 'Share'),
-        item('export', Icons.download_outlined, 'Export as text'),
+        item('open', Icons.edit_outlined, l10n.open),
+        item('copy', Icons.copy_outlined, l10n.copyNote),
+        item('share', Icons.ios_share, l10n.share),
+        item('export', Icons.download_outlined, l10n.exportAsText),
         const PopupMenuDivider(),
-        item('delete', Icons.delete_outline, 'Delete note', c: danger),
+        item('delete', Icons.delete_outline, l10n.deleteNote, c: danger),
       ],
     );
     if (!context.mounted) return;
@@ -359,7 +368,7 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
         await _duplicate(context, ref);
       case 'share':
         await SharePlus.instance.share(
-          ShareParams(text: _shareText, title: note.title),
+          ShareParams(text: _shareText(l10n), title: note.title),
         );
       case 'export':
         final name = (note.title.isEmpty ? 'note' : note.title).replaceAll(
@@ -370,7 +379,7 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
           ShareParams(
             files: [
               XFile.fromData(
-                Uint8List.fromList(utf8.encode(_shareText)),
+                Uint8List.fromList(utf8.encode(_shareText(l10n))),
                 mimeType: 'text/plain',
                 name: '$name.txt',
               ),
@@ -387,12 +396,15 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final title = note.title.isEmpty ? 'Untitled' : note.title;
+    final l10n = context.l10n;
+    final title = _displayTitle(l10n);
     final split = isSplitView(context);
     void open() => split
         ? context.go('/notes/${note.id}')
         : context.push('/notes/${note.id}');
-    final edited = DateFormat.yMMMd().add_jm().format(note.updatedAt);
+    final edited = DateFormat.yMMMd(
+      l10n.localeName,
+    ).add_jm().format(note.updatedAt);
     final card = Card(
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
@@ -433,15 +445,15 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
       label: [
         title,
         if (note.body.isNotEmpty) note.body,
-        'Edited $edited',
+        l10n.edited(edited),
       ].join('. '),
       button: true,
       selected: selected,
       onTap: open,
       customSemanticsActions: {
-        const CustomSemanticsAction(label: 'Copy note'): () =>
+        CustomSemanticsAction(label: l10n.copyNote): () =>
             _duplicate(context, ref),
-        const CustomSemanticsAction(label: 'Delete note'): () =>
+        CustomSemanticsAction(label: l10n.deleteNote): () =>
             _delete(context, ref),
       },
       excludeSemantics: true,
@@ -469,14 +481,14 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
                         SlidableAction(
                           onPressed: (_) => _duplicate(context, ref),
                           icon: Icons.copy_outlined,
-                          label: 'Copy',
+                          label: l10n.copy,
                           backgroundColor: scheme.secondaryContainer,
                           foregroundColor: scheme.onSecondaryContainer,
                         ),
                         SlidableAction(
                           onPressed: (_) => _delete(context, ref),
                           icon: Icons.delete_outline,
-                          label: 'Delete',
+                          label: l10n.delete,
                           backgroundColor: scheme.errorContainer,
                           foregroundColor: scheme.onErrorContainer,
                         ),

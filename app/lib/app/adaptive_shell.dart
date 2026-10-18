@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../features/notes/presentation/notes_screen.dart';
 import '../shared/layout/layout.dart';
 import '../shared/widgets/illustration.dart';
+import '../l10n/l10n.dart';
 
 /// Wraps the notes routes. Narrow windows show one screen at a time; wide
 /// windows (see [splitViewMinWidth]) keep the list on the left and show the
@@ -69,11 +70,11 @@ class SelectNotePlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       body: IllustratedMessage(
         kind: IllustrationKind.select,
-        title: 'Select a note',
-        subtitle: 'or press Ctrl/Cmd+N to write a new one.',
+        title: context.l10n.selectNote,
+        subtitle: context.l10n.selectNoteHint,
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app/theme/tokens.dart';
+import '../../l10n/l10n.dart';
 
 /// Rounded search field with a clear button while it has text. Built on
 /// `TextField` (not `SearchBar`) so the whole 56 px height is one tap target.
@@ -50,7 +51,7 @@ class _SearchInputState extends State<SearchInput> {
           builder: (context, _) => _controller.text.isEmpty
               ? const SizedBox.shrink()
               : IconButton(
-                  tooltip: 'Clear search',
+                  tooltip: context.l10n.clearSearch,
                   icon: const Icon(Icons.close),
                   onPressed: () {
                     _controller.clear();

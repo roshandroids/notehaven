@@ -39,6 +39,13 @@ class SettingsController extends Notifier<AppSettings> {
 
   void setTextScale(double value) => _update(state.copyWith(textScale: value));
 
+  /// Pass null to follow the system language.
+  void setLocale(String? code) => _update(
+    code == null
+        ? state.copyWith(clearLocale: true)
+        : state.copyWith(localeCode: code),
+  );
+
   void _update(AppSettings next) {
     state = next;
     ref.read(settingsRepositoryProvider).save(next);

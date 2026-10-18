@@ -9,6 +9,7 @@ import '../features/settings/domain/app_settings.dart';
 import '../features/settings/presentation/settings_providers.dart';
 import 'router.dart';
 import 'theme/app_theme.dart';
+import '../l10n/l10n.dart';
 
 /// Root widget: theme + router. No business logic.
 class App extends ConsumerWidget {
@@ -21,16 +22,19 @@ class App extends ConsumerWidget {
       settingsProvider.select((s) => s.motion == MotionPreference.reduced),
     );
     final textScale = ref.watch(settingsProvider.select((s) => s.textScale));
+    final localeCode = ref.watch(settingsProvider.select((s) => s.localeCode));
     return MaterialApp.router(
-      title: 'Note Haven',
+      onGenerateTitle: (context) => context.l10n.appTitle,
+      locale: localeCode == null ? null : Locale(localeCode),
       theme: themes.light,
       darkTheme: themes.dark,
       themeMode: ref.watch(themeModeProvider),
       localizationsDelegates: const [
+        AppLocalizations.delegate,
         ...GlobalMaterialLocalizations.delegates,
         FlutterQuillLocalizations.delegate,
       ],
-      supportedLocales: FlutterQuillLocalizations.supportedLocales,
+      supportedLocales: AppLocalizations.supportedLocales,
       routerConfig: ref.watch(routerProvider),
       // "Reduced" in settings behaves exactly like the OS reduce-motion flag.
       builder: (context, child) {

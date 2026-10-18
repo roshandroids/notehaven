@@ -12,6 +12,7 @@ import 'drawing/drawing_embed.dart';
 import 'note_actions.dart';
 import 'note_document.dart';
 import 'note_providers.dart';
+import '../../../l10n/l10n.dart';
 
 /// Id used in the route for a note that does not exist yet.
 const newNoteId = 'new';
@@ -31,7 +32,7 @@ class NoteEditorScreen extends ConsumerWidget {
           data: (note) => note == null
               ? Scaffold(
                   appBar: AppBar(),
-                  body: const Center(child: Text('Note not found')),
+                  body: Center(child: Text(context.l10n.noteNotFound)),
                 )
               : _NoteForm(note: note),
           loading: () => Scaffold(
@@ -40,7 +41,7 @@ class NoteEditorScreen extends ConsumerWidget {
           ),
           error: (e, _) => Scaffold(
             appBar: AppBar(),
-            body: Center(child: Text('Could not load note: $e')),
+            body: Center(child: Text(context.l10n.couldNotLoadNote('$e'))),
           ),
         );
   }
@@ -97,6 +98,7 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
   Future<void> _save() async {
     final feedback = ref.read(feedbackProvider);
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     final doc = serializeDocument(_quill.document);
     final failure = await ref
         .read(noteActionsProvider)
@@ -121,10 +123,10 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
                   color: Theme.of(context).colorScheme.onInverseSurface,
                 ),
                 const SizedBox(width: 12),
-                const Text('Note saved'),
+                Text(l10n.noteSaved),
               ],
             ),
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
     } else {
@@ -138,6 +140,7 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
     final actions = ref.read(noteActionsProvider);
     final feedback = ref.read(feedbackProvider)..play(FeedbackEvent.delete);
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     final failure = await actions.delete(note.id);
     if (!mounted) return;
     if (failure != null) {
@@ -148,10 +151,10 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
     _close();
     messenger.showSnackBar(
       SnackBar(
-        content: const Text('Note deleted'),
+        content: Text(l10n.noteDeleted),
         persist: false,
         action: SnackBarAction(
-          label: 'Undo',
+          label: l10n.undo,
           onPressed: () {
             feedback.play(FeedbackEvent.undo);
             actions.restore(note);
@@ -194,7 +197,9 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
         ),
         FloatingActionButton(
           heroTag: 'format-fab',
-          tooltip: _formatOpen ? 'Hide formatting' : 'Formatting',
+          tooltip: _formatOpen
+              ? context.l10n.hideFormatting
+              : context.l10n.formatting,
           onPressed: () => setState(() => _formatOpen = !_formatOpen),
           child: Icon(
             _formatOpen ? Symbols.close_rounded : Symbols.text_format_rounded,
@@ -249,11 +254,13 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(widget.note == null ? 'New note' : 'Edit note'),
+          title: Text(
+            widget.note == null ? context.l10n.newNote : context.l10n.editNote,
+          ),
           actions: [
             if (widget.note != null) ...[
               IconButton.outlined(
-                tooltip: 'Delete',
+                tooltip: context.l10n.delete,
                 icon: const Icon(Symbols.delete_rounded),
                 onPressed: _delete,
               ),
@@ -261,13 +268,13 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
             ],
             const SizedBox(width: 8),
             IconButton.outlined(
-              tooltip: 'Insert drawing',
+              tooltip: context.l10n.insertDrawing,
               icon: const Icon(Symbols.draw_rounded),
               onPressed: _insertDrawing,
             ),
             const SizedBox(width: 8),
             IconButton.filled(
-              tooltip: 'Save',
+              tooltip: context.l10n.save,
               icon: const Icon(Symbols.check_rounded),
               onPressed: _save,
             ),
@@ -287,8 +294,8 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
                     controller: _title,
                     textInputAction: TextInputAction.next,
                     style: theme.textTheme.headlineSmall,
-                    decoration: const InputDecoration(
-                      hintText: 'Title',
+                    decoration: InputDecoration(
+                      hintText: context.l10n.titleHint,
                       border: InputBorder.none,
                     ),
                   ),
@@ -300,7 +307,7 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
                       focusNode: _editorFocus,
                       scrollController: _editorScroll,
                       config: QuillEditorConfig(
-                        placeholder: 'Write something…',
+                        placeholder: context.l10n.bodyHint,
                         // Room for the formatting FAB on phones.
                         padding: EdgeInsets.only(
                           top: 12,
@@ -324,7 +331,7 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
                       return Align(
                         alignment: Alignment.centerRight,
                         child: Text(
-                          '$words words · ${text.length} characters',
+                          context.l10n.wordCount(words, text.length),
                           style: theme.textTheme.labelSmall,
                         ),
                       );

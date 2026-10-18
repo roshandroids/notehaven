@@ -3,12 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/feedback/custom_sounds.dart';
 import '../../../shared/feedback/ui_feedback.dart';
+import '../../../l10n/l10n.dart';
 
-const _labels = {
-  FeedbackEvent.success: 'Saved',
-  FeedbackEvent.delete: 'Deleted',
-  FeedbackEvent.undo: 'Undo',
-  FeedbackEvent.error: 'Error',
+String _label(AppLocalizations l10n, FeedbackEvent e) => switch (e) {
+  FeedbackEvent.success => l10n.soundSaved,
+  FeedbackEvent.delete => l10n.soundDeleted,
+  FeedbackEvent.undo => l10n.undo,
+  _ => l10n.soundError,
 };
 
 /// Per-event choice between the built-in tone and a user audio file.
@@ -39,7 +40,7 @@ class _CustomSoundsDialogState extends ConsumerState<CustomSoundsDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Custom sounds'),
+    title: Text(context.l10n.customSounds),
     content: SizedBox(
       width: 420,
       child: Column(
@@ -50,29 +51,32 @@ class _CustomSoundsDialogState extends ConsumerState<CustomSoundsDialog> {
               future: customSoundFor(event),
               builder: (context, snap) {
                 final file = snap.data;
+                final l10n = context.l10n;
                 return ListTile(
-                  title: Text(_labels[event]!),
+                  title: Text(_label(l10n, event)),
                   subtitle: Text(
-                    file == null ? 'Default tone' : file.uri.pathSegments.last,
+                    file == null
+                        ? l10n.defaultTone
+                        : file.uri.pathSegments.last,
                   ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton.outlined(
-                        tooltip: 'Play ${_labels[event]} sound',
+                        tooltip: l10n.playSound(_label(l10n, event)),
                         icon: const Icon(Icons.play_arrow),
                         onPressed: () => ref.read(feedbackProvider).play(event),
                       ),
                       const SizedBox(width: 8),
                       IconButton.outlined(
-                        tooltip: 'Choose ${_labels[event]} sound',
+                        tooltip: l10n.chooseSound(_label(l10n, event)),
                         icon: const Icon(Icons.folder_open),
                         onPressed: () => _pick(event),
                       ),
                       if (file != null) ...[
                         const SizedBox(width: 8),
                         IconButton.outlined(
-                          tooltip: 'Reset ${_labels[event]} sound',
+                          tooltip: l10n.resetSound(_label(l10n, event)),
                           icon: const Icon(Icons.restart_alt),
                           onPressed: () async {
                             await resetCustomSound(event);
@@ -91,7 +95,7 @@ class _CustomSoundsDialogState extends ConsumerState<CustomSoundsDialog> {
     actions: [
       FilledButton(
         onPressed: () => Navigator.pop(context),
-        child: const Text('Done'),
+        child: Text(context.l10n.done),
       ),
     ],
   );
