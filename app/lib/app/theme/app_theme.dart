@@ -30,15 +30,35 @@ AppThemes buildThemes(AppSettings settings) {
   final font = settings.fontFamily;
   final useFont = font != null && GoogleFonts.asMap().containsKey(font);
 
-  ThemeData withFont(ThemeData base) => useFont
-      ? base.copyWith(
-          textTheme: GoogleFonts.getTextTheme(font, base.textTheme),
-          primaryTextTheme: GoogleFonts.getTextTheme(
-            font,
-            base.primaryTextTheme,
-          ),
-        )
-      : base;
+  // Keep-style minimal chrome: flat bars, outlined cards, no tint or shadow.
+  ThemeData minimal(ThemeData base) => base.copyWith(
+    appBarTheme: const AppBarTheme(
+      scrolledUnderElevation: 0,
+      surfaceTintColor: Colors.transparent,
+      backgroundColor: Colors.transparent,
+    ),
+    cardTheme: CardThemeData(
+      elevation: 0,
+      color: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: base.colorScheme.outlineVariant),
+      ),
+    ),
+    dividerTheme: const DividerThemeData(space: 1, thickness: 0.5),
+  );
+
+  ThemeData withFont(ThemeData base) => minimal(
+    useFont
+        ? base.copyWith(
+            textTheme: GoogleFonts.getTextTheme(font, base.textTheme),
+            primaryTextTheme: GoogleFonts.getTextTheme(
+              font,
+              base.primaryTextTheme,
+            ),
+          )
+        : base,
+  );
 
   return AppThemes(
     light: withFont(FlexThemeData.light(scheme: scheme, useMaterial3: true)),

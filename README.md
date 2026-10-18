@@ -11,7 +11,7 @@ Use it as a **GitHub template** for your own apps, or read it to learn a layered
 - Local SQLite (Drift) with the schema dumped for migrations (`app/drift_schemas/`).
 - Backend-agnostic auto sync (off until you configure a backend): engine, REST reference adapter, soft deletes, outbox ([protocol](documentation/sync_protocol.md)).
 - Feedback: haptics (phones/tablets), optional UI sounds (off by default, generated in code), undo snackbars, long-press/right-click note menu, animated empty state, sync icon and drawing thumbnails; all switchable in Appearance ([ADR-0004](documentation/adr/0004-feedback-haptics-sounds-motion.md)).
-- Keyboard shortcuts: Ctrl/Cmd+N new note, Ctrl/Cmd+S save, Ctrl/Cmd+, appearance.
+- Keyboard shortcuts: Ctrl/Cmd+N (Alt+N in browsers) new note, Ctrl/Cmd+S save, Ctrl/Cmd+, appearance.
 - Responsive: one pane on phones, list + editor side by side from 900 px wide.
 - Accessibility: screen-reader labels and actions, tap-target tests, reduce-motion support ([details](documentation/accessibility.md)).
 

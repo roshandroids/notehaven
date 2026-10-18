@@ -163,7 +163,6 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(widget.note == null ? 'New note' : 'Edit note'),
           actions: [
             if (widget.note != null)
               IconButton(
@@ -200,7 +199,6 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
                       border: InputBorder.none,
                     ),
                   ),
-                  const Divider(),
                   QuillSimpleToolbar(
                     controller: _quill,
                     config: const QuillSimpleToolbarConfig(

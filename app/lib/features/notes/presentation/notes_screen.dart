@@ -31,6 +31,7 @@ class NotesScreen extends ConsumerWidget {
     final searching = ref.watch(
       searchQueryProvider.select((q) => q.trim().isNotEmpty),
     );
+    final grid = ref.watch(gridViewProvider);
     final split = isSplitView(context);
     void openSettings() => context.push('/settings');
     void newNote() =>
@@ -40,6 +41,8 @@ class NotesScreen extends ConsumerWidget {
       bindings: {
         const SingleActivator(LogicalKeyboardKey.keyN, meta: true): newNote,
         const SingleActivator(LogicalKeyboardKey.keyN, control: true): newNote,
+        // Browsers reserve Cmd/Ctrl+N for a new window; Alt+N works on web too.
+        const SingleActivator(LogicalKeyboardKey.keyN, alt: true): newNote,
         const SingleActivator(LogicalKeyboardKey.comma, meta: true):
             openSettings,
         const SingleActivator(LogicalKeyboardKey.comma, control: true):
@@ -49,8 +52,17 @@ class NotesScreen extends ConsumerWidget {
         autofocus: true,
         child: Scaffold(
           appBar: AppBar(
-            title: const Text('Notehaven'),
+            toolbarHeight: 72,
+            titleSpacing: 16,
+            title: const _SearchField(),
             actions: [
+              IconButton(
+                tooltip: grid ? 'List view' : 'Grid view',
+                icon: Icon(
+                  grid ? Icons.view_agenda_outlined : Icons.grid_view_outlined,
+                ),
+                onPressed: ref.read(gridViewProvider.notifier).toggle,
+              ),
               const SyncStatusButton(),
               IconButton(
                 tooltip: 'Appearance',
@@ -72,21 +84,12 @@ class NotesScreen extends ConsumerWidget {
               begin: const Offset(0.6, 0.6),
             ),
           ),
-          body: Column(
-            children: [
-              const _SearchField(),
-              Expanded(
-                child: notes.when(
-                  data: (items) => items.isEmpty
-                      ? _EmptyState(searching: searching)
-                      : _NoteGrid(items: items, selectedId: selectedId),
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                  error: (e, _) =>
-                      Center(child: Text('Could not load notes: $e')),
-                ),
-              ),
-            ],
+          body: notes.when(
+            data: (items) => items.isEmpty
+                ? _EmptyState(searching: searching)
+                : _NoteGrid(items: items, selectedId: selectedId, grid: grid),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(child: Text('Could not load notes: $e')),
           ),
         ),
       ),
@@ -129,13 +132,10 @@ class _SearchFieldState extends ConsumerState<_SearchField> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      child: SearchInput(
-        key: const Key('search'),
-        hintText: 'Search notes',
-        onChanged: _onChanged,
-      ),
+    return SearchInput(
+      key: const Key('search'),
+      hintText: 'Search notes',
+      onChanged: _onChanged,
     );
   }
 }
@@ -149,41 +149,35 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Center(
-      child: _maybeAnimate(
-        context,
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _maybeAnimate(
-              context,
-              Icon(
-                searching ? Icons.search_off : Icons.edit_note,
-                size: 72,
-                color: theme.colorScheme.outline,
-              ),
-              (w) => w.animate().scale(
-                delay: 150.ms,
-                duration: 400.ms,
-                curve: Curves.elasticOut,
-                begin: const Offset(0.5, 0.5),
-              ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            searching ? Icons.search_off : Icons.lightbulb_outline,
+            size: 96,
+            color: theme.colorScheme.outlineVariant,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            searching ? 'No matching notes' : 'Notes you add appear here',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.outline,
             ),
-            const SizedBox(height: 12),
-            Text(
-              searching ? 'No matching notes' : 'No notes yet',
-              style: theme.textTheme.titleMedium,
-            ),
-            if (!searching) const Text('Tap "New note" to write one.'),
-          ],
-        ),
-        (w) => w.animate().fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0),
+          ),
+        ],
       ),
     );
   }
 }
 
 class _NoteGrid extends StatelessWidget {
-  const _NoteGrid({required this.items, required this.selectedId});
+  const _NoteGrid({
+    required this.items,
+    required this.selectedId,
+    required this.grid,
+  });
+
+  final bool grid;
 
   final List<Note> items;
   final String? selectedId;
@@ -196,9 +190,13 @@ class _NoteGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return MasonryGridView.builder(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
-      gridDelegate: const SliverSimpleGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 360,
-      ),
+      gridDelegate: grid
+          ? const SliverSimpleGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 360,
+            )
+          : const SliverSimpleGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 1,
+            ),
       mainAxisSpacing: 12,
       crossAxisSpacing: 12,
       itemCount: items.length,
@@ -373,13 +371,6 @@ class _NoteCard extends ConsumerWidget {
                       style: theme.textTheme.bodyMedium,
                     ),
                   ],
-                  const SizedBox(height: 10),
-                  Text(
-                    edited,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: scheme.outline,
-                    ),
-                  ),
                 ],
               ),
             ),
