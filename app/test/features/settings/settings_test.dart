@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,6 +19,14 @@ import 'package:shared_preferences_platform_interface/in_memory_shared_preferenc
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 
 void main() {
+  test('changelog top version matches pubspec version', () {
+    final pub = File('pubspec.yaml').readAsStringSync();
+    final log = File('assets/CHANGELOG.md').readAsStringSync();
+    final v = RegExp(r'^version: *([0-9.]+)', multiLine: true).firstMatch(pub)!;
+    final top = RegExp(r'^## \[([^\]]+)\]', multiLine: true).firstMatch(log)!;
+    expect(top.group(1), v.group(1));
+  });
+
   group('SettingsController', () {
     test('setters update state and persist', () async {
       final repo = InMemorySettingsRepository();

@@ -7,15 +7,23 @@ import '../shared/layout/layout.dart';
 /// Wraps the notes routes. Narrow windows show one screen at a time; wide
 /// windows (see [splitViewMinWidth]) keep the list on the left and show the
 /// routed screen (editor or placeholder) on the right.
-class AdaptiveShell extends StatelessWidget {
+class AdaptiveShell extends StatefulWidget {
   const AdaptiveShell({required this.state, required this.child, super.key});
 
   final GoRouterState state;
   final Widget child;
 
+  @override
+  State<AdaptiveShell> createState() => _AdaptiveShellState();
+}
+
+class _AdaptiveShellState extends State<AdaptiveShell> {
+  // shortcut: width resets on restart; persist it in settings if wanted.
+  double _paneWidth = listPaneWidth;
+
   /// Note id when the location is `/notes/<id>` (including `new`), else null.
   String? get _selectedId {
-    final segments = state.uri.pathSegments;
+    final segments = widget.state.uri.pathSegments;
     return segments.length == 2 && segments.first == 'notes'
         ? segments[1]
         : null;
@@ -23,15 +31,31 @@ class AdaptiveShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!isSplitView(context)) return child;
+    if (!isSplitView(context)) return widget.child;
     return Row(
       children: [
         SizedBox(
-          width: listPaneWidth,
+          width: _paneWidth,
           child: NotesScreen(selectedId: _selectedId),
         ),
-        const VerticalDivider(width: 1),
-        Expanded(child: child),
+        // Drag to resize the list pane; the editor keeps at least 400 px.
+        MouseRegion(
+          cursor: SystemMouseCursors.resizeColumn,
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onHorizontalDragUpdate: (d) => setState(
+              () => _paneWidth = (_paneWidth + d.delta.dx).clamp(
+                260.0,
+                MediaQuery.sizeOf(context).width - 400,
+              ),
+            ),
+            child: const SizedBox(
+              width: 8,
+              child: VerticalDivider(width: 8, indent: 0),
+            ),
+          ),
+        ),
+        Expanded(child: widget.child),
       ],
     );
   }

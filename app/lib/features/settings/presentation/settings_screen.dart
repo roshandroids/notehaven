@@ -1,5 +1,6 @@
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -121,6 +122,7 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
               ),
+              const SliverToBoxAdapter(child: _AboutTile()),
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 sliver: SliverToBoxAdapter(
@@ -254,6 +256,39 @@ class _SchemeTile extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Version (top heading of the bundled changelog, kept equal to pubspec's
+/// `version:` by the release workflow) with the full changelog on tap.
+class _AboutTile extends StatelessWidget {
+  const _AboutTile();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String>(
+      future: rootBundle.loadString('assets/CHANGELOG.md'),
+      builder: (context, snap) {
+        final log = snap.data ?? '';
+        final version = RegExp(
+          r'^## \[([^\]]+)\]',
+          multiLine: true,
+        ).firstMatch(log)?.group(1);
+        return ListTile(
+          leading: const Icon(Icons.info_outline),
+          title: const Text('About'),
+          subtitle: Text(version == null ? 'Notehaven' : 'Version $version'),
+          onTap: log.isEmpty
+              ? null
+              : () => showAboutDialog(
+                  context: context,
+                  applicationName: 'Notehaven',
+                  applicationVersion: version,
+                  children: [SelectableText(log)],
+                ),
+        );
+      },
     );
   }
 }

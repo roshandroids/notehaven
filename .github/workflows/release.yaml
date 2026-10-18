@@ -1,0 +1,25 @@
+name: Release
+# On merge to main: if app/pubspec.yaml's version has no tag yet, tag it and publish
+# a GitHub release whose notes are that version's CHANGELOG section.
+# Bump the version in pubspec.yaml and app/assets/CHANGELOG.md in the PR to release.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tag and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v=$(sed -n 's/^version: *\([0-9.]*\).*/\1/p' app/pubspec.yaml)
+          if gh release view "v$v" >/dev/null 2>&1; then echo "v$v already released"; exit 0; fi
+          awk -v v="$v" '$0 ~ "^## \\[" v "\\]" {f=1; next} /^## \[/ {f=0} f' app/assets/CHANGELOG.md > notes.md
+          test -s notes.md || { echo "No CHANGELOG section for $v"; exit 1; }
+          gh release create "v$v" --target "$GITHUB_SHA" --title "v$v" --notes-file notes.md

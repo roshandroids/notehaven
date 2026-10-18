@@ -22,7 +22,7 @@ class SearchInput extends StatelessWidget {
         hintText: hintText,
         prefixIcon: const Icon(Icons.search),
         filled: true,
-        fillColor: scheme.surfaceContainerHighest,
+        fillColor: scheme.surfaceContainerHigh,
         contentPadding: const EdgeInsets.symmetric(vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(28),

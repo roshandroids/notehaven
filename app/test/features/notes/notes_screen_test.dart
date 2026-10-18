@@ -54,7 +54,7 @@ void main() {
 
   testWidgets('shows the empty state', (tester) async {
     await pumpApp(tester);
-    expect(find.text('No notes yet'), findsOneWidget);
+    expect(find.text('Notes you add appear here'), findsOneWidget);
   });
 
   testWidgets('creates a note and lists it', (tester) async {
