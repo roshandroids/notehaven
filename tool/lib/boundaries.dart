@@ -63,6 +63,8 @@ bool _isFlutter(String target) =>
     target.startsWith('package:flutter/') ||
     target.startsWith('package:flutter_');
 
+bool _isDrift(String target) => target.startsWith('package:drift');
+
 Iterable<String> _rules(String rel, String target, String? resolved) sync* {
   final from = _featureRe.firstMatch(rel);
   final to = resolved == null ? null : _featureRe.firstMatch(resolved);
@@ -70,6 +72,7 @@ Iterable<String> _rules(String rel, String target, String? resolved) sync* {
   // 1. domain is pure: no Flutter, no data, no presentation.
   if (from != null && from.group(2) == 'domain') {
     if (_isFlutter(target)) yield 'domain must not import Flutter';
+    if (_isDrift(target)) yield 'domain must not import drift';
     if (to != null &&
         to.group(1) == from.group(1) &&
         (to.group(2) == 'data' || to.group(2) == 'presentation')) {
@@ -91,6 +94,9 @@ Iterable<String> _rules(String rel, String target, String? resolved) sync* {
       to.group(1) == from.group(1) &&
       to.group(2) == 'data') {
     yield 'presentation must not import data (use domain interfaces)';
+  }
+  if (from != null && from.group(2) == 'presentation' && _isDrift(target)) {
+    yield 'presentation must not import drift';
   }
   // 5. packages never import the app.
   if (rel.startsWith('packages/') &&

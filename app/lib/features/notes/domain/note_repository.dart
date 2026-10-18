@@ -4,9 +4,22 @@ import 'note.dart';
 
 /// Source of truth for notes. Implementations live in `data/`.
 abstract interface class NoteRepository {
-  /// Notes, newest first.
-  Future<Result<List<Note>>> list();
+  /// Notes matching [query] (title or body, case-insensitive), newest edit
+  /// first. Emits again whenever the notes change.
+  Stream<Result<List<Note>>> watch({String query = ''});
 
-  /// Adds a note; fails with [ValidationFailure] if [title] is blank.
-  Future<Result<Note>> add(String title);
+  /// The note with [id], or null if it does not exist.
+  Future<Result<Note?>> get(String id);
+
+  /// Creates a note; fails with [ValidationFailure] if title and body are blank.
+  Future<Result<Note>> create(String title, String body);
+
+  /// Saves changes to [note] and stamps a new `updatedAt`.
+  Future<Result<Note>> update(Note note);
+
+  /// Removes the note with [id]. Deleting a missing id succeeds.
+  Future<Result<void>> delete(String id);
+
+  /// Re-inserts [note] exactly as given (used by "undo delete").
+  Future<Result<void>> restore(Note note);
 }

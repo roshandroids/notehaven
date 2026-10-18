@@ -1,33 +1,237 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
-import 'note_controller.dart';
+import '../../../shared/layout/layout.dart';
+import '../../../shared/widgets/search_input.dart';
+import '../domain/note.dart';
+import 'note_actions.dart';
+import 'note_providers.dart';
 
-/// Lists notes and lets the user add one.
-class NotesScreen extends ConsumerStatefulWidget {
-  const NotesScreen({super.key});
+/// Note list: masonry grid, debounced search, swipe actions, Ctrl/Cmd+N.
+class NotesScreen extends ConsumerWidget {
+  /// [selectedId] highlights the open note when shown as the split-view pane.
+  const NotesScreen({this.selectedId, super.key});
+
+  final String? selectedId;
 
   @override
-  ConsumerState<NotesScreen> createState() => _NotesScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notes = ref.watch(notesProvider);
+    final searching = ref.watch(
+      searchQueryProvider.select((q) => q.trim().isNotEmpty),
+    );
+    final split = isSplitView(context);
+    void newNote() =>
+        split ? context.go('/notes/new') : context.push('/notes/new');
+
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.keyN, meta: true): newNote,
+        const SingleActivator(LogicalKeyboardKey.keyN, control: true): newNote,
+      },
+      child: Focus(
+        autofocus: true,
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text('Notehaven'),
+            actions: [
+              IconButton(
+                tooltip: 'Appearance',
+                icon: const Icon(Icons.palette_outlined),
+                onPressed: () => context.push('/settings'),
+              ),
+            ],
+          ),
+          floatingActionButton: _maybeAnimate(
+            context,
+            FloatingActionButton.extended(
+              onPressed: newNote,
+              icon: const Icon(Icons.add),
+              label: const Text('New note'),
+            ),
+            (w) => w.animate().scale(
+              duration: 300.ms,
+              curve: Curves.easeOutBack,
+              begin: const Offset(0.6, 0.6),
+            ),
+          ),
+          body: Column(
+            children: [
+              const _SearchField(),
+              Expanded(
+                child: notes.when(
+                  data: (items) => items.isEmpty
+                      ? _EmptyState(searching: searching)
+                      : _NoteGrid(items: items, selectedId: selectedId),
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (e, _) =>
+                      Center(child: Text('Could not load notes: $e')),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-class _NotesScreenState extends ConsumerState<NotesScreen> {
-  final _title = TextEditingController();
+/// Applies [animation] unless the OS asks to reduce motion.
+Widget _maybeAnimate(
+  BuildContext context,
+  Widget child,
+  Widget Function(Widget) animation,
+) => reduceMotion(context) ? child : animation(child);
+
+/// Search box that waits 250 ms after the last keystroke before querying, so
+/// fast typing does not re-run the database query on every character.
+class _SearchField extends ConsumerStatefulWidget {
+  const _SearchField();
+
+  @override
+  ConsumerState<_SearchField> createState() => _SearchFieldState();
+}
+
+class _SearchFieldState extends ConsumerState<_SearchField> {
+  Timer? _debounce;
 
   @override
   void dispose() {
-    _title.dispose();
+    _debounce?.cancel();
     super.dispose();
   }
 
-  Future<void> _add() async {
-    final failure = await ref
-        .read(noteControllerProvider.notifier)
-        .add(_title.text);
-    if (!mounted) return;
-    if (failure == null) {
-      _title.clear();
-    } else {
+  void _onChanged(String value) {
+    _debounce?.cancel();
+    _debounce = Timer(
+      const Duration(milliseconds: 250),
+      () => ref.read(searchQueryProvider.notifier).set(value),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: SearchInput(
+        key: const Key('search'),
+        hintText: 'Search notes',
+        onChanged: _onChanged,
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.searching});
+
+  final bool searching;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: _maybeAnimate(
+        context,
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              searching ? Icons.search_off : Icons.edit_note,
+              size: 72,
+              color: theme.colorScheme.outline,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              searching ? 'No matching notes' : 'No notes yet',
+              style: theme.textTheme.titleMedium,
+            ),
+            if (!searching) const Text('Tap "New note" to write one.'),
+          ],
+        ),
+        (w) => w.animate().fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0),
+      ),
+    );
+  }
+}
+
+class _NoteGrid extends StatelessWidget {
+  const _NoteGrid({required this.items, required this.selectedId});
+
+  final List<Note> items;
+  final String? selectedId;
+
+  /// Only the first screenful animates in; later items would animate while
+  /// scrolling, which costs frames for no benefit.
+  static const _animatedCount = 12;
+
+  @override
+  Widget build(BuildContext context) {
+    return MasonryGridView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+      gridDelegate: const SliverSimpleGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 360,
+      ),
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      itemCount: items.length,
+      itemBuilder: (_, i) {
+        final note = items[i];
+        final card = RepaintBoundary(
+          key: ValueKey(note.id),
+          child: _NoteCard(note: note, selected: note.id == selectedId),
+        );
+        return i < _animatedCount && !reduceMotion(context)
+            ? card
+                  .animate(delay: (30 * i).ms)
+                  .fadeIn(duration: 250.ms)
+                  .slideY(begin: 0.06, end: 0, curve: Curves.easeOut)
+            : card;
+      },
+    );
+  }
+}
+
+class _NoteCard extends ConsumerWidget {
+  const _NoteCard({required this.note, required this.selected});
+
+  final Note note;
+  final bool selected;
+
+  Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    HapticFeedback.mediumImpact();
+    final actions = ref.read(noteActionsProvider);
+    final messenger = ScaffoldMessenger.of(context);
+    final failure = await actions.delete(note.id);
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(failure?.message ?? 'Note deleted'),
+          action: failure == null
+              ? SnackBarAction(
+                  label: 'Undo',
+                  onPressed: () => actions.restore(note),
+                )
+              : null,
+        ),
+      );
+  }
+
+  Future<void> _duplicate(BuildContext context, WidgetRef ref) async {
+    HapticFeedback.lightImpact();
+    final failure = await ref.read(noteActionsProvider).duplicate(note);
+    if (failure != null && context.mounted) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(failure.message)));
@@ -35,42 +239,93 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final notes = ref.watch(noteControllerProvider);
-    return Scaffold(
-      appBar: AppBar(title: const Text('Notehaven')),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _title,
-                    decoration: const InputDecoration(labelText: 'New note'),
-                    onSubmitted: (_) => _add(),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final title = note.title.isEmpty ? 'Untitled' : note.title;
+    final split = isSplitView(context);
+    void open() => split
+        ? context.go('/notes/${note.id}')
+        : context.push('/notes/${note.id}');
+    final edited = DateFormat.yMMMd().add_jm().format(note.updatedAt);
+    return Semantics(
+      // One focus stop per note; swipe actions are exposed as custom actions
+      // so screen-reader users can copy or delete without a swipe gesture.
+      label: [
+        title,
+        if (note.body.isNotEmpty) note.body,
+        'Edited $edited',
+      ].join('. '),
+      button: true,
+      selected: selected,
+      onTap: open,
+      customSemanticsActions: {
+        const CustomSemanticsAction(label: 'Copy note'): () =>
+            _duplicate(context, ref),
+        const CustomSemanticsAction(label: 'Delete note'): () =>
+            _delete(context, ref),
+      },
+      excludeSemantics: true,
+      child: Slidable(
+        key: ValueKey(note.id),
+        endActionPane: ActionPane(
+          motion: const DrawerMotion(),
+          extentRatio: 0.5,
+          children: [
+            SlidableAction(
+              onPressed: (_) => _duplicate(context, ref),
+              icon: Icons.copy_outlined,
+              label: 'Copy',
+              backgroundColor: scheme.secondaryContainer,
+              foregroundColor: scheme.onSecondaryContainer,
+            ),
+            SlidableAction(
+              onPressed: (_) => _delete(context, ref),
+              icon: Icons.delete_outline,
+              label: 'Delete',
+              backgroundColor: scheme.errorContainer,
+              foregroundColor: scheme.onErrorContainer,
+            ),
+          ],
+        ),
+        child: Card(
+          margin: EdgeInsets.zero,
+          clipBehavior: Clip.antiAlias,
+          color: selected ? scheme.secondaryContainer : null,
+          child: InkWell(
+            onTap: open,
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium,
                   ),
-                ),
-                const SizedBox(width: 8),
-                FilledButton(onPressed: _add, child: const Text('Add')),
-              ],
-            ),
-          ),
-          Expanded(
-            child: notes.when(
-              data: (items) => items.isEmpty
-                  ? const Center(child: Text('No notes yet'))
-                  : ListView.builder(
-                      itemCount: items.length,
-                      itemBuilder: (_, i) =>
-                          ListTile(title: Text(items[i].title)),
+                  if (note.body.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      note.body,
+                      maxLines: 6,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium,
                     ),
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('$e')),
+                  ],
+                  const SizedBox(height: 10),
+                  Text(
+                    edited,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: scheme.outline,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }

@@ -4,34 +4,90 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:notehaven_app/app/app.dart';
 import 'package:notehaven_app/features/notes/data/in_memory_note_repository.dart';
 import 'package:notehaven_app/features/notes/presentation/note_providers.dart';
+import 'package:notehaven_app/features/settings/data/in_memory_settings_repository.dart';
+import 'package:notehaven_app/features/settings/presentation/settings_providers.dart';
 
 void main() {
-  Widget app() => ProviderScope(
-    overrides: [
-      noteRepositoryProvider.overrideWithValue(InMemoryNoteRepository()),
-    ],
-    child: const App(),
-  );
+  late InMemoryNoteRepository repo;
 
-  testWidgets('adds an entry and shows it', (tester) async {
-    await tester.pumpWidget(app());
+  Future<void> pumpApp(WidgetTester tester) async {
+    repo = InMemoryNoteRepository();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          noteRepositoryProvider.overrideWithValue(repo),
+          settingsRepositoryProvider.overrideWithValue(
+            InMemorySettingsRepository(),
+          ),
+        ],
+        child: const App(),
+      ),
+    );
     await tester.pumpAndSettle();
+  }
+
+  Future<void> addNote(WidgetTester tester, String title, String body) async {
+    await tester.tap(find.text('New note'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('note-title')), title);
+    await tester.enterText(find.byKey(const Key('note-body')), body);
+    await tester.tap(find.byTooltip('Save'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('shows the empty state', (tester) async {
+    await pumpApp(tester);
     expect(find.text('No notes yet'), findsOneWidget);
-
-    await tester.enterText(find.byType(TextField), 'Buy paper');
-    await tester.tap(find.text('Add'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Buy paper'), findsOneWidget);
   });
 
-  testWidgets('blank title shows a validation message', (tester) async {
-    await tester.pumpWidget(app());
-    await tester.pumpAndSettle();
+  testWidgets('creates a note and lists it', (tester) async {
+    await pumpApp(tester);
+    await addNote(tester, 'Groceries', 'milk, eggs');
+    expect(find.text('Groceries'), findsOneWidget);
+    expect(find.text('milk, eggs'), findsOneWidget);
+  });
 
-    await tester.tap(find.text('Add'));
+  testWidgets('saving an empty note shows a validation message', (
+    tester,
+  ) async {
+    await pumpApp(tester);
+    await tester.tap(find.text('New note'));
     await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Save'));
+    await tester.pumpAndSettle();
+    expect(find.text('Note is empty'), findsOneWidget);
+  });
 
-    expect(find.text('Title is empty'), findsOneWidget);
+  testWidgets('search filters the list', (tester) async {
+    await pumpApp(tester);
+    await addNote(tester, 'Groceries', 'milk');
+    await addNote(tester, 'Work', 'standup');
+    await tester.enterText(find.byKey(const Key('search')), 'gro');
+    await tester.pumpAndSettle();
+    expect(find.text('Groceries'), findsOneWidget);
+    expect(find.text('Work'), findsNothing);
+  });
+
+  testWidgets('swipe Copy duplicates the note', (tester) async {
+    await pumpApp(tester);
+    await addNote(tester, 'Plan', 'body');
+    await tester.drag(find.text('Plan'), const Offset(-400, 0));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Copy'));
+    await tester.pumpAndSettle();
+    expect(find.text('Plan (copy)'), findsOneWidget);
+  });
+
+  testWidgets('delete removes the note and undo restores it', (tester) async {
+    await pumpApp(tester);
+    await addNote(tester, 'Temp', 'x');
+    await tester.drag(find.text('Temp'), const Offset(-400, 0));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+    expect(find.text('Temp'), findsNothing);
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+    expect(find.text('Temp'), findsOneWidget);
   });
 }

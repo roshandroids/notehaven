@@ -6,7 +6,10 @@ FLUTTER="${FLUTTER:-fvm flutter}"
 DART="${DART:-fvm dart}"
 
 $FLUTTER pub get
-$DART format --output=none --set-exit-if-changed app/lib app/test packages tool
+(cd app && $DART run build_runner build)
+# Generated *.g.dart files are not committed, so they are not format-checked.
+find app/lib app/test packages tool -name '*.dart' ! -name '*.g.dart' -print0 \
+  | xargs -0 $DART format --output=none --set-exit-if-changed
 $FLUTTER analyze
 $DART run tool/bin/check_boundaries.dart
 (cd tool && $DART test)

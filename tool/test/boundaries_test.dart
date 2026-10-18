@@ -47,6 +47,22 @@ void main() {
     );
   });
 
+  test('domain importing drift is flagged', () {
+    write(
+      'app/lib/features/a/domain/m.dart',
+      "import 'package:drift/drift.dart';",
+    );
+    expect(checkBoundaries(root.path).single.rule, contains('drift'));
+  });
+
+  test('presentation importing drift is flagged', () {
+    write(
+      'app/lib/features/a/presentation/s.dart',
+      "import 'package:drift/drift.dart';",
+    );
+    expect(checkBoundaries(root.path).single.rule, contains('drift'));
+  });
+
   test('presentation importing data is flagged', () {
     write('app/lib/features/a/data/r.dart', '');
     write('app/lib/features/a/presentation/s.dart', "import '../data/r.dart';");
