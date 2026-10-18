@@ -24,7 +24,7 @@ class ColorThemeScreen extends ConsumerWidget {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          const SliverAppBar.large(title: Text('Color theme')),
+          const SliverAppBar(pinned: true, title: Text('Color theme')),
           SliverPadding(
             padding: const EdgeInsets.all(16),
             sliver: SliverGrid.builder(

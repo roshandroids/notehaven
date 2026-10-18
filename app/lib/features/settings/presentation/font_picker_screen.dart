@@ -74,7 +74,7 @@ class _FontPickerScreenState extends ConsumerState<FontPickerScreen> {
           constraints: const BoxConstraints(maxWidth: 720),
           child: CustomScrollView(
             slivers: [
-              const SliverAppBar.large(title: Text('Font')),
+              const SliverAppBar(pinned: true, title: Text('Font')),
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
