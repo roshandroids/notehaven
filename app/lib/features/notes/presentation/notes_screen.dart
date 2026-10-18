@@ -353,25 +353,28 @@ class _NoteCard extends ConsumerWidget {
             onSecondaryTap: () => _showMenu(context, ref),
             child: Padding(
               padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleMedium,
-                  ),
-                  if (note.body.isNotEmpty) ...[
-                    const SizedBox(height: 6),
+              child: SizedBox(
+                width: double.infinity,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      note.body,
-                      maxLines: 6,
+                      title,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium,
+                      style: theme.textTheme.titleMedium,
                     ),
+                    if (note.body.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        note.body,
+                        maxLines: 6,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),

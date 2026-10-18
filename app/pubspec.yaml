@@ -40,9 +40,43 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   drift_dev: 2.34.0
   build_runner: ^2.5.0
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.6
   shared_preferences_platform_interface: ^2.4.2
 
 flutter:
   uses-material-design: true
   assets:
     - assets/CHANGELOG.md
+
+# Regenerate with: dart run flutter_launcher_icons && dart run flutter_native_splash:create
+flutter_launcher_icons:
+  image_path: assets/brand/icon.png
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  adaptive_icon_background: "#3F51B5"
+  adaptive_icon_foreground: assets/brand/icon_foreground.png
+  adaptive_icon_monochrome: assets/brand/icon_monochrome.png
+  web:
+    generate: true
+    image_path: assets/brand/icon.png
+    background_color: "#3F51B5"
+    theme_color: "#3F51B5"
+  windows:
+    generate: true
+    image_path: assets/brand/icon.png
+    icon_size: 256
+  macos:
+    generate: true
+    image_path: assets/brand/icon.png
+
+flutter_native_splash:
+  color: "#FFF8E8"
+  color_dark: "#101B35"
+  image: assets/brand/splash.png
+  android_12:
+    color: "#FFF8E8"
+    color_dark: "#101B35"
+    image: assets/brand/splash.png
+  web: false

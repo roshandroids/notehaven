@@ -45,6 +45,7 @@ AppThemes buildThemes(AppSettings settings) {
         side: BorderSide(color: base.colorScheme.outlineVariant),
       ),
     ),
+    snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating),
     dividerTheme: const DividerThemeData(space: 1, thickness: 0.5),
   );
 

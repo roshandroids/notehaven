@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 180">
+  <g font-family="Arial, sans-serif" font-size="22" fill="#172B63" text-anchor="middle">
+    <rect x="10" y="10" width="110" height="90" rx="16" fill="#3F51B5"/><text x="65" y="135">Primary</text><text x="65" y="163">#3F51B5</text>
+    <rect x="155" y="10" width="110" height="90" rx="16" fill="#283593"/><text x="210" y="135">Dark</text><text x="210" y="163">#283593</text>
+    <rect x="300" y="10" width="110" height="90" rx="16" fill="#FFC145"/><text x="355" y="135">Accent</text><text x="355" y="163">#FFC145</text>
+    <rect x="445" y="10" width="110" height="90" rx="16" fill="#FFF8E8" stroke="#E4DFD4"/><text x="500" y="135">Surface</text><text x="500" y="163">#FFF8E8</text>
+    <rect x="590" y="10" width="110" height="90" rx="16" fill="#E8EBFF"/><text x="645" y="135">Muted</text><text x="645" y="163">#E8EBFF</text>
+    <rect x="735" y="10" width="110" height="90" rx="16" fill="#374151"/><text x="790" y="135">Text</text><text x="790" y="163">#374151</text>
+  </g>
+</svg>
