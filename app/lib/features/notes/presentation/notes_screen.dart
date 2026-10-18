@@ -66,8 +66,8 @@ class NotesScreen extends ConsumerWidget {
               ),
               const SyncStatusButton(),
               IconButton(
-                tooltip: 'Appearance',
-                icon: const Icon(Icons.palette_outlined),
+                tooltip: 'Settings',
+                icon: const Icon(Icons.settings_outlined),
                 onPressed: openSettings,
               ),
             ],

@@ -9,7 +9,7 @@ import '../../../shared/feedback/ui_feedback.dart';
 import '../domain/app_settings.dart';
 import 'settings_providers.dart';
 
-/// Appearance settings: light/dark, color theme, font.
+/// Settings: light/dark, color theme, font.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -20,7 +20,7 @@ class SettingsScreen extends ConsumerWidget {
     final feedback = ref.read(feedbackProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Appearance')),
+      appBar: AppBar(title: const Text('Settings')),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 840),

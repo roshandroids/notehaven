@@ -154,7 +154,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Appearance'));
+    await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
 
     expect(container.read(feedbackPrefsProvider).sounds, isFalse);
@@ -187,7 +187,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Appearance'));
+    await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
 
     final target = FlexScheme.values.firstWhere(

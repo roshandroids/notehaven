@@ -157,6 +157,38 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final wide = MediaQuery.sizeOf(context).width >= 600;
+    final toolbar = Material(
+      color: theme.colorScheme.surfaceContainerHigh,
+      borderRadius: BorderRadius.circular(wide ? 12 : 0),
+      child: QuillSimpleToolbar(
+        controller: _quill,
+        config: QuillSimpleToolbarConfig(
+          // Wide: Word-style ribbon wrapping onto rows. Phone: one slim row.
+          multiRowsDisplay: wide,
+          showSubscript: wide,
+          showSuperscript: wide,
+          showFontFamily: wide,
+          showFontSize: wide,
+          showInlineCode: false,
+          showClearFormat: true,
+          showAlignmentButtons: true,
+          showLink: true,
+          showSearchButton: wide,
+          buttonOptions: QuillSimpleToolbarButtonOptions(
+            bold: _toggle(Symbols.format_bold_rounded),
+            italic: _toggle(Symbols.format_italic_rounded),
+            underLine: _toggle(Symbols.format_underlined_rounded),
+            strikeThrough: _toggle(Symbols.format_strikethrough_rounded),
+            subscript: _toggle(Symbols.subscript_rounded),
+            superscript: _toggle(Symbols.superscript_rounded),
+            listBullets: _toggle(Symbols.format_list_bulleted_rounded),
+            listNumbers: _toggle(Symbols.format_list_numbered_rounded),
+            quote: _toggle(Symbols.format_quote_rounded),
+          ),
+        ),
+      ),
+    );
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.keyS, meta: true): _save,
@@ -200,44 +232,7 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
                       border: InputBorder.none,
                     ),
                   ),
-                  Material(
-                    color: theme.colorScheme.surfaceContainerHigh,
-                    borderRadius: BorderRadius.circular(12),
-                    child: QuillSimpleToolbar(
-                      controller: _quill,
-                      config: QuillSimpleToolbarConfig(
-                        // Word-style ribbon: wraps onto extra rows instead of scrolling.
-                        multiRowsDisplay: true,
-                        showSubscript: true,
-                        showSuperscript: true,
-                        showFontFamily: true,
-                        showFontSize: true,
-                        showInlineCode: false,
-                        showClearFormat: true,
-                        showAlignmentButtons: true,
-                        showLink: true,
-                        showSearchButton: true,
-                        buttonOptions: QuillSimpleToolbarButtonOptions(
-                          bold: _toggle(Symbols.format_bold_rounded),
-                          italic: _toggle(Symbols.format_italic_rounded),
-                          underLine: _toggle(Symbols.format_underlined_rounded),
-                          strikeThrough: _toggle(
-                            Symbols.format_strikethrough_rounded,
-                          ),
-                          subscript: _toggle(Symbols.subscript_rounded),
-                          superscript: _toggle(Symbols.superscript_rounded),
-                          listBullets: _toggle(
-                            Symbols.format_list_bulleted_rounded,
-                          ),
-                          listNumbers: _toggle(
-                            Symbols.format_list_numbered_rounded,
-                          ),
-                          quote: _toggle(Symbols.format_quote_rounded),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const Divider(height: 1),
+                  if (wide) ...[toolbar, const Divider(height: 1)],
                   Expanded(
                     child: QuillEditor(
                       key: const Key('note-body'),
@@ -251,6 +246,7 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
                       ),
                     ),
                   ),
+                  if (!wide) ...[const Divider(height: 1), toolbar],
                   ListenableBuilder(
                     listenable: _quill,
                     builder: (context, _) {
