@@ -154,12 +154,12 @@ class _AboutTile extends StatelessWidget {
         return ListTile(
           leading: const Icon(Icons.info_outline),
           title: const Text('About'),
-          subtitle: Text(version == null ? 'Notehaven' : 'Version $version'),
+          subtitle: Text(version == null ? 'Note Haven' : 'Version $version'),
           onTap: log.isEmpty
               ? null
               : () => showAboutDialog(
                   context: context,
-                  applicationName: 'Notehaven',
+                  applicationName: 'Note Haven',
                   applicationVersion: version,
                   children: [SelectableText(log)],
                 ),

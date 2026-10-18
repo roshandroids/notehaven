@@ -157,7 +157,7 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) => IllustratedMessage(
     kind: searching ? IllustrationKind.search : IllustrationKind.onboarding,
-    title: searching ? 'No matching notes' : 'Welcome to Notehaven',
+    title: searching ? 'No matching notes' : 'Welcome to Note Haven',
     subtitle: searching ? null : 'Notes you add appear here',
   );
 }

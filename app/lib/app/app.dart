@@ -21,7 +21,7 @@ class App extends ConsumerWidget {
       settingsProvider.select((s) => s.motion == MotionPreference.reduced),
     );
     return MaterialApp.router(
-      title: 'Notehaven',
+      title: 'Note Haven',
       theme: themes.light,
       darkTheme: themes.dark,
       themeMode: ref.watch(themeModeProvider),
