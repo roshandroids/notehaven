@@ -64,6 +64,9 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
   final _editorFocus = FocusNode();
   final _editorScroll = ScrollController();
 
+  /// Phone only: the formatting toolbar expands from the FAB.
+  bool _formatOpen = false;
+
   @override
   void dispose() {
     _title.dispose();
@@ -158,12 +161,55 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
     );
   }
 
+  /// Toolbar card that grows out of the bottom-right FAB.
+  Widget _formatFab(Widget toolbar) {
+    final scheme = Theme.of(context).colorScheme;
+    final motion = MediaQuery.disableAnimationsOf(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        AnimatedSwitcher(
+          duration: motion ? Duration.zero : const Duration(milliseconds: 220),
+          switchInCurve: Curves.easeOutBack,
+          transitionBuilder: (w, a) => ScaleTransition(
+            alignment: Alignment.bottomRight,
+            scale: a,
+            child: FadeTransition(opacity: a, child: w),
+          ),
+          child: _formatOpen
+              ? Padding(
+                  key: const ValueKey('format-bar'),
+                  padding: const EdgeInsets.only(bottom: 12, left: 16),
+                  child: Card(
+                    elevation: 3,
+                    color: scheme.surfaceContainerHigh,
+                    child: SizedBox(
+                      width: MediaQuery.sizeOf(context).width - 32,
+                      child: toolbar,
+                    ),
+                  ),
+                )
+              : const SizedBox.shrink(key: ValueKey('format-closed')),
+        ),
+        FloatingActionButton(
+          heroTag: 'format-fab',
+          tooltip: _formatOpen ? 'Hide formatting' : 'Formatting',
+          onPressed: () => setState(() => _formatOpen = !_formatOpen),
+          child: Icon(
+            _formatOpen ? Symbols.close_rounded : Symbols.text_format_rounded,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final wide = MediaQuery.sizeOf(context).width >= 600;
     final toolbar = Material(
-      color: theme.colorScheme.surfaceContainerHigh,
+      color: wide ? theme.colorScheme.surfaceContainerHigh : Colors.transparent,
       borderRadius: BorderRadius.circular(wide ? 12 : 0),
       child: QuillSimpleToolbar(
         controller: _quill,
@@ -205,24 +251,30 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
         appBar: AppBar(
           title: Text(widget.note == null ? 'New note' : 'Edit note'),
           actions: [
-            if (widget.note != null)
-              IconButton(
+            if (widget.note != null) ...[
+              IconButton.outlined(
                 tooltip: 'Delete',
                 icon: const Icon(Symbols.delete_rounded),
                 onPressed: _delete,
               ),
-            IconButton(
+              const SizedBox(width: 8),
+            ],
+            const SizedBox(width: 8),
+            IconButton.outlined(
               tooltip: 'Insert drawing',
               icon: const Icon(Symbols.draw_rounded),
               onPressed: _insertDrawing,
             ),
-            IconButton(
+            const SizedBox(width: 8),
+            IconButton.filled(
               tooltip: 'Save',
               icon: const Icon(Symbols.check_rounded),
               onPressed: _save,
             ),
+            const SizedBox(width: 12),
           ],
         ),
+        floatingActionButton: wide ? null : _formatFab(toolbar),
         body: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 860),
@@ -247,10 +299,14 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
                       controller: _quill,
                       focusNode: _editorFocus,
                       scrollController: _editorScroll,
-                      config: const QuillEditorConfig(
+                      config: QuillEditorConfig(
                         placeholder: 'Write something…',
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        embedBuilders: [DrawingEmbedBuilder()],
+                        // Room for the formatting FAB on phones.
+                        padding: EdgeInsets.only(
+                          top: 12,
+                          bottom: wide ? 12 : 88,
+                        ),
+                        embedBuilders: const [DrawingEmbedBuilder()],
                       ),
                     ),
                   ),

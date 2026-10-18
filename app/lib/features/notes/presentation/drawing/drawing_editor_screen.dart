@@ -217,26 +217,27 @@ class _DrawingEditorScreenState extends ConsumerState<DrawingEditorScreen> {
                   ),
                   title: const Text('Drawing'),
                   actions: [
-                    IconButton(
+                    IconButton.outlined(
                       tooltip: 'Undo',
                       icon: const Icon(Icons.undo),
                       onPressed: _controller.canUndo ? _undo : null,
                     ),
-                    IconButton(
+                    IconButton.outlined(
                       tooltip: 'Redo',
                       icon: const Icon(Icons.redo),
                       onPressed: _controller.canRedo ? _redo : null,
                     ),
-                    IconButton(
+                    IconButton.outlined(
                       tooltip: 'Clear drawing',
                       icon: const Icon(Icons.delete_sweep_outlined),
                       onPressed: _controller.strokes.isEmpty ? null : _clear,
                     ),
-                    IconButton(
+                    IconButton.filled(
                       tooltip: 'Save drawing',
                       icon: const Icon(Icons.check),
                       onPressed: _save,
                     ),
+                    const SizedBox(width: 12),
                   ],
                 ),
                 floatingActionButton: _ToolFab(

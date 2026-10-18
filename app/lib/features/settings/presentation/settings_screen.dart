@@ -9,6 +9,7 @@ import '../../../shared/feedback/ui_feedback.dart';
 import '../../notes/presentation/note_providers.dart';
 import '../domain/app_settings.dart';
 import 'settings_providers.dart';
+import 'storage_usage.dart';
 
 /// Settings: light/dark, color theme, font.
 class SettingsScreen extends ConsumerWidget {
@@ -156,6 +157,7 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
               ),
+              const SliverToBoxAdapter(child: _StorageTile()),
               const SliverToBoxAdapter(child: _AboutTile()),
             ],
           ),
@@ -165,8 +167,41 @@ class SettingsScreen extends ConsumerWidget {
   }
 }
 
+/// Local usage (notes vs. deletable cache) with a clear-cache button.
+class _StorageTile extends ConsumerWidget {
+  const _StorageTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final usage = ref.watch(storageUsageProvider).value;
+    if (usage == null) return const SizedBox.shrink();
+    return ListTile(
+      leading: const Icon(Icons.storage_outlined),
+      title: const Text('Storage'),
+      subtitle: Text(
+        'Notes ${formatBytes(usage.notes)} · Cache ${formatBytes(usage.cache)}',
+      ),
+      trailing: OutlinedButton(
+        onPressed: usage.cache == 0
+            ? null
+            : () async {
+                await clearCache();
+                ref.invalidate(storageUsageProvider);
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context)
+                  ..hideCurrentSnackBar()
+                  ..showSnackBar(
+                    const SnackBar(content: Text('Cache cleared')),
+                  );
+              },
+        child: const Text('Clear cache'),
+      ),
+    );
+  }
+}
+
 /// Version (top heading of the bundled changelog, kept equal to pubspec's
-/// `version:` by the release workflow) with the full changelog on tap.
+/// `version:` by the release workflow) with the formatted changelog on tap.
 class _AboutTile extends StatelessWidget {
   const _AboutTile();
 
@@ -186,14 +221,90 @@ class _AboutTile extends StatelessWidget {
           subtitle: Text(version == null ? 'Note Haven' : 'Version $version'),
           onTap: log.isEmpty
               ? null
-              : () => showAboutDialog(
+              : () => showDialog<void>(
                   context: context,
-                  applicationName: 'Note Haven',
-                  applicationVersion: version,
-                  children: [SelectableText(log)],
+                  builder: (_) => _AboutDialog(log: log),
                 ),
         );
       },
+    );
+  }
+}
+
+/// Changelog markdown (## release, ### group, - item) as styled widgets.
+class _AboutDialog extends StatelessWidget {
+  const _AboutDialog({required this.log});
+
+  final String log;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final rows = <Widget>[];
+    for (final line in log.split('\n')) {
+      if (line.startsWith('## ')) {
+        final m = RegExp(r'^## \[([^\]]+)\](?: - (.*))?').firstMatch(line);
+        rows.add(
+          Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: Row(
+              children: [
+                Chip(label: Text('v${m?.group(1) ?? line.substring(3)}')),
+                const SizedBox(width: 8),
+                if (m?.group(2) != null)
+                  Text(m!.group(2)!, style: theme.textTheme.bodySmall),
+              ],
+            ),
+          ),
+        );
+      } else if (line.startsWith('### ')) {
+        rows.add(
+          Padding(
+            padding: const EdgeInsets.only(top: 12, bottom: 4),
+            child: Text(
+              line.substring(4),
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+        );
+      } else if (line.startsWith('- ')) {
+        rows.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('•  '),
+                Expanded(child: Text(line.substring(2))),
+              ],
+            ),
+          ),
+        );
+      }
+    }
+    return AlertDialog(
+      icon: const Icon(Icons.edit_note, size: 40),
+      title: const Text('Note Haven'),
+      content: SizedBox(
+        width: 420,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('What\'s new', style: theme.textTheme.titleMedium),
+              ...rows,
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        FilledButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Close'),
+        ),
+      ],
     );
   }
 }

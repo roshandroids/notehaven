@@ -39,9 +39,11 @@ AppThemes buildThemes(AppSettings settings) {
       systemOverlayStyle: base.brightness == Brightness.dark
           ? SystemUiOverlayStyle.light
           : SystemUiOverlayStyle.dark,
-      scrolledUnderElevation: 0,
+      scrolledUnderElevation: 1,
+      shadowColor: base.colorScheme.outlineVariant,
       surfaceTintColor: Colors.transparent,
-      backgroundColor: Colors.transparent,
+      // Solid, so content scrolled under the bar does not show through.
+      backgroundColor: base.scaffoldBackgroundColor,
     ),
     cardTheme: CardThemeData(
       elevation: 0,

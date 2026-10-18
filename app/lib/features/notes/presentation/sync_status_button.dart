@@ -32,7 +32,7 @@ class SyncStatusButton extends ConsumerWidget {
     };
     final syncing = status.state == SyncState.syncing;
     final glyph = Icon(icon, key: ValueKey(status.state));
-    return IconButton(
+    return IconButton.outlined(
       tooltip: tooltip,
       // Spin while syncing; cross-fade between states. State is also in the
       // tooltip, so nothing depends on the motion.

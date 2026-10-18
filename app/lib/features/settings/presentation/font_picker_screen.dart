@@ -54,6 +54,34 @@ class _FontPickerScreenState extends ConsumerState<FontPickerScreen> {
       .toList(growable: false);
 
   String _query = '';
+  final _scroll = ScrollController();
+  final _searchFocus = FocusNode();
+
+  /// True once the search field has scrolled out of view.
+  final _searchHidden = ValueNotifier(false);
+
+  @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(() => _searchHidden.value = _scroll.offset > 72);
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    _searchFocus.dispose();
+    _searchHidden.dispose();
+    super.dispose();
+  }
+
+  Future<void> _jumpToSearch() async {
+    await _scroll.animateTo(
+      0,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+    );
+    _searchFocus.requestFocus();
+  }
 
   List<String> get _results {
     final q = _query.trim().toLowerCase();
@@ -73,18 +101,43 @@ class _FontPickerScreenState extends ConsumerState<FontPickerScreen> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
           child: CustomScrollView(
+            controller: _scroll,
             slivers: [
-              const SliverAppBar(pinned: true, title: Text('Font')),
+              SliverAppBar(
+                pinned: true,
+                title: const Text('Font'),
+                actions: [
+                  ValueListenableBuilder(
+                    valueListenable: _searchHidden,
+                    builder: (context, hidden, _) => AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      child: hidden
+                          ? Padding(
+                              key: const ValueKey('search-action'),
+                              padding: const EdgeInsets.only(right: 12),
+                              child: IconButton.filledTonal(
+                                tooltip: 'Search fonts',
+                                icon: const Icon(Icons.search),
+                                onPressed: _jumpToSearch,
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                  ),
+                ],
+              ),
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                   child: SearchInput(
+                    focusNode: _searchFocus,
                     hintText: 'Search ${_all.length} Google Fonts',
                     onChanged: (v) => setState(() => _query = v),
                   ),
                 ),
               ),
-              SliverList.builder(
+              SliverList.separated(
+                separatorBuilder: (_, _) => const Divider(),
                 itemCount: results.length + (preview ? 1 : 0),
                 itemBuilder: (context, i) {
                   if (preview && i == 0) {

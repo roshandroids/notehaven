@@ -79,11 +79,12 @@ class NotesScreen extends ConsumerWidget {
                 title: const _SearchField(),
                 actions: [
                   const SyncStatusButton(),
-                  IconButton(
+                  IconButton.filledTonal(
                     tooltip: 'Settings',
                     icon: const Icon(Icons.settings_outlined),
                     onPressed: openSettings,
                   ),
+                  const SizedBox(width: 12),
                 ],
               ),
               ...notes.when(

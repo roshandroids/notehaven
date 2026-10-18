@@ -33,6 +33,7 @@ dependencies:
   audioplayers: ^6.8.1
   flutter_svg: ^2.3.0
   material_symbols_icons: ^4.2960.0
+  path_provider: ^2.1.6
   share_plus: ^13.3.1
 dev_dependencies:
   # shortcut: drift_dev is capped below 2.34.6 (needs analyzer >=13, but test/flutter_test pin
