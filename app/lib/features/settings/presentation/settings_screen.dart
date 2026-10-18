@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/app_theme.dart';
 import '../../../shared/feedback/ui_feedback.dart';
+import '../../notes/presentation/note_actions.dart';
 import '../../notes/presentation/note_providers.dart';
 import '../domain/app_settings.dart';
 import 'settings_providers.dart';
@@ -158,6 +159,7 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               ),
               const SliverToBoxAdapter(child: _StorageTile()),
+              const SliverToBoxAdapter(child: _DeleteAllTile()),
               const SliverToBoxAdapter(child: _AboutTile()),
             ],
           ),
@@ -196,6 +198,65 @@ class _StorageTile extends ConsumerWidget {
               },
         child: const Text('Clear cache'),
       ),
+    );
+  }
+}
+
+/// Deletes all notes after a confirmation; the snackbar offers undo.
+class _DeleteAllTile extends ConsumerWidget {
+  const _DeleteAllTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    return ListTile(
+      leading: Icon(Icons.delete_forever_outlined, color: scheme.error),
+      title: const Text('Delete all notes'),
+      subtitle: const Text('Removes every note from this device'),
+      onTap: () async {
+        final actions = ref.read(noteActionsProvider);
+        final messenger = ScaffoldMessenger.of(context);
+        final ok = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Delete all notes?'),
+            content: const Text('You can undo right after.'),
+            actions: [
+              OutlinedButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: scheme.error,
+                  foregroundColor: scheme.onError,
+                ),
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Delete all'),
+              ),
+            ],
+          ),
+        );
+        if (ok != true) return;
+        final deleted = await actions.deleteAll();
+        ref.invalidate(storageUsageProvider);
+        messenger
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text('${deleted.length} notes deleted'),
+              persist: false,
+              action: SnackBarAction(
+                label: 'Undo',
+                onPressed: () async {
+                  for (final n in deleted) {
+                    await actions.restore(n);
+                  }
+                },
+              ),
+            ),
+          );
+      },
     );
   }
 }

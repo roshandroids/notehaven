@@ -9,6 +9,7 @@ import 'package:notehaven_app/app/feedback_wiring.dart';
 import 'package:notehaven_app/shared/feedback/ui_feedback.dart';
 import 'package:notehaven_app/app/theme/app_theme.dart';
 import 'package:notehaven_app/features/notes/data/in_memory_note_repository.dart';
+import 'package:notehaven_app/features/notes/presentation/note_actions.dart';
 import 'package:notehaven_app/features/notes/presentation/note_providers.dart';
 import 'package:notehaven_app/features/settings/data/in_memory_settings_repository.dart';
 import 'package:notehaven_app/features/settings/data/prefs_settings_repository.dart';
@@ -208,5 +209,21 @@ void main() {
     await tester.tap(find.text('Dark'));
     await tester.pumpAndSettle();
     expect(settingsRepo.settings.themePreference, ThemePreference.dark);
+  });
+
+  group('NoteActions.deleteAll', () {
+    test('deletes every note and returns them for undo', () async {
+      final repo = InMemoryNoteRepository();
+      await repo.create('a', 'x');
+      await repo.create('b', 'y');
+      final actions = NoteActions(repo);
+      final deleted = await actions.deleteAll();
+      expect(deleted, hasLength(2));
+      expect((await repo.watch().first).fold((l) => l, (_) => []), isEmpty);
+      for (final n in deleted) {
+        await actions.restore(n);
+      }
+      expect((await repo.watch().first).fold((l) => l.length, (_) => 0), 2);
+    });
   });
 }

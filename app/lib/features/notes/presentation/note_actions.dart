@@ -48,6 +48,18 @@ class NoteActions {
   Future<Failure?> delete(String id) async =>
       (await _repository.delete(id)).fold<Failure?>((_) => null, (f) => f);
 
+  /// Deletes every note (soft delete, so it syncs) and returns them for undo.
+  Future<List<Note>> deleteAll() async {
+    final notes = (await _repository.watch().first).fold(
+      (list) => list,
+      (_) => <Note>[],
+    );
+    for (final n in notes) {
+      await _repository.delete(n.id);
+    }
+    return notes;
+  }
+
   /// Puts a deleted [note] back unchanged.
   Future<Failure?> restore(Note note) async =>
       (await _repository.restore(note)).fold<Failure?>((_) => null, (f) => f);
