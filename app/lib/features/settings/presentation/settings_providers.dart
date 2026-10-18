@@ -30,6 +30,13 @@ class SettingsController extends Notifier<AppSettings> {
         : state.copyWith(fontFamily: family),
   );
 
+  void setHaptics(bool value) => _update(state.copyWith(hapticsEnabled: value));
+
+  void setSounds(bool value) => _update(state.copyWith(soundsEnabled: value));
+
+  void setMotion(MotionPreference value) =>
+      _update(state.copyWith(motion: value));
+
   void _update(AppSettings next) {
     state = next;
     ref.read(settingsRepositoryProvider).save(next);

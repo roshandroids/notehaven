@@ -6,11 +6,14 @@ Built in and tested (`app/test/features/notes/responsive_accessibility_test.dart
 - Tap-target guidelines (Android 48 dp, iOS 44 pt) and labeled-tap-target checks run in CI.
 - Search uses a `TextField` instead of Material `SearchBar`, because `SearchBar`'s inner field reports a 24 px tap target.
 - Decorative animations are skipped when the OS "reduce motion" setting is on.
+- Haptics, sounds and motion are never the only signal: every action also shows a snackbar, icon or label change. Appearance has switches for haptics and sounds (sounds default off) and an Animations setting (follow system / reduced) that behaves like the OS reduce-motion flag.
+- Long-press or right-click a note opens the same Copy/Delete menu as the swipe pane.
 - Color themes are Material 3 schemes from FlexColorScheme; light, dark and system modes are available.
 
 Drawings: the sketch pad has tooltips on every tool, labeled color swatches, and the embedded thumbnail is one labeled, tappable stop ("Drawing. Double tap to edit."). Freehand drawing itself needs touch, pen or mouse and cannot be done by screen reader alone; text notes remain fully usable.
 
 Not yet done / not verified:
+- Real-device haptics and speaker output were not tried (tests use fakes).
 - No manual run with TalkBack, VoiceOver or a desktop screen reader (automated checks only).
 - Contrast of every FlexColorScheme preset is not audited (the contrast guideline is not in the test suite yet).
 - Large text scale (200%) layouts are not tested.

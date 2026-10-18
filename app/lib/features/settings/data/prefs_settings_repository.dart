@@ -20,6 +20,9 @@ class PrefsSettingsRepository implements SettingsRepository {
   static const _themeKey = 'theme_preference';
   static const _schemeKey = 'scheme_name';
   static const _fontKey = 'font_family';
+  static const _hapticsKey = 'haptics_enabled';
+  static const _soundsKey = 'sounds_enabled';
+  static const _motionKey = 'motion_preference';
 
   final SharedPreferencesWithCache _prefs;
 
@@ -31,6 +34,11 @@ class PrefsSettingsRepository implements SettingsRepository {
       themePreference: theme ?? ThemePreference.system,
       schemeName: _prefs.getString(_schemeKey) ?? AppSettings.defaultSchemeName,
       fontFamily: _prefs.getString(_fontKey),
+      hapticsEnabled: _prefs.getBool(_hapticsKey) ?? true,
+      soundsEnabled: _prefs.getBool(_soundsKey) ?? false,
+      motion:
+          MotionPreference.values.asNameMap()[_prefs.getString(_motionKey)] ??
+          MotionPreference.system,
     );
   }
 
@@ -39,6 +47,9 @@ class PrefsSettingsRepository implements SettingsRepository {
     try {
       await _prefs.setString(_themeKey, s.themePreference.name);
       await _prefs.setString(_schemeKey, s.schemeName);
+      await _prefs.setBool(_hapticsKey, s.hapticsEnabled);
+      await _prefs.setBool(_soundsKey, s.soundsEnabled);
+      await _prefs.setString(_motionKey, s.motion.name);
       final font = s.fontFamily;
       if (font == null) {
         await _prefs.remove(_fontKey);

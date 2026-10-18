@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared/feedback/ui_feedback.dart';
 import '../../domain/drawing.dart';
 import 'drawing_controller.dart';
 import 'drawing_painter.dart';
@@ -17,20 +19,23 @@ Future<Drawing?> openDrawingEditor(BuildContext context, [Drawing? initial]) =>
 
 /// Full-screen sketch pad: pen, highlighter, stroke eraser, colors, width,
 /// undo/redo and clear.
-class DrawingEditorScreen extends StatefulWidget {
+class DrawingEditorScreen extends ConsumerStatefulWidget {
   const DrawingEditorScreen({this.initial, super.key});
 
   final Drawing? initial;
 
   @override
-  State<DrawingEditorScreen> createState() => _DrawingEditorScreenState();
+  ConsumerState<DrawingEditorScreen> createState() =>
+      _DrawingEditorScreenState();
 }
 
-class _DrawingEditorScreenState extends State<DrawingEditorScreen> {
+class _DrawingEditorScreenState extends ConsumerState<DrawingEditorScreen> {
   late final DrawingController _controller = DrawingController(
     widget.initial ?? Drawing.empty,
   );
   int? _pointer;
+
+  UiFeedback get _feedback => ref.read(feedbackProvider);
 
   @override
   void dispose() {
@@ -50,10 +55,36 @@ class _DrawingEditorScreenState extends State<DrawingEditorScreen> {
       );
       return;
     }
+    _feedback.play(FeedbackEvent.success);
     Navigator.of(context).pop(drawing);
   }
 
+  void _undo() {
+    _feedback.play(FeedbackEvent.undo);
+    _controller.undo();
+  }
+
+  void _redo() {
+    _feedback.play(FeedbackEvent.undo);
+    _controller.redo();
+  }
+
+  /// Clears everything, with a snackbar to bring it back (clear is one undo step).
+  void _clear() {
+    _feedback.play(FeedbackEvent.delete);
+    _controller.clear();
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: const Text('Drawing cleared'),
+          action: SnackBarAction(label: 'Undo', onPressed: _undo),
+        ),
+      );
+  }
+
   Future<void> _confirmDiscard() async {
+    _feedback.play(FeedbackEvent.warning);
     final discard = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -77,6 +108,7 @@ class _DrawingEditorScreenState extends State<DrawingEditorScreen> {
     if (_pointer != null) return; // ignore extra fingers / palm
     _pointer = e.pointer;
     final p = _normalize(e.localPosition, size);
+    _feedback.play(FeedbackEvent.strokeStart);
     _controller.start(p.dx, p.dy);
   }
 
@@ -89,7 +121,12 @@ class _DrawingEditorScreenState extends State<DrawingEditorScreen> {
   void _pointerUp(PointerEvent e) {
     if (e.pointer != _pointer) return;
     _pointer = null;
-    e is PointerCancelEvent ? _controller.cancel() : _controller.end();
+    if (e is PointerCancelEvent) {
+      _controller.cancel();
+    } else {
+      _feedback.play(FeedbackEvent.strokeEnd);
+      _controller.end();
+    }
   }
 
   Offset _normalize(Offset local, Size size) => Offset(
@@ -114,19 +151,17 @@ class _DrawingEditorScreenState extends State<DrawingEditorScreen> {
                 IconButton(
                   tooltip: 'Undo',
                   icon: const Icon(Icons.undo),
-                  onPressed: _controller.canUndo ? _controller.undo : null,
+                  onPressed: _controller.canUndo ? _undo : null,
                 ),
                 IconButton(
                   tooltip: 'Redo',
                   icon: const Icon(Icons.redo),
-                  onPressed: _controller.canRedo ? _controller.redo : null,
+                  onPressed: _controller.canRedo ? _redo : null,
                 ),
                 IconButton(
                   tooltip: 'Clear drawing',
                   icon: const Icon(Icons.delete_sweep_outlined),
-                  onPressed: _controller.strokes.isEmpty
-                      ? null
-                      : _controller.clear,
+                  onPressed: _controller.strokes.isEmpty ? null : _clear,
                 ),
                 IconButton(
                   tooltip: 'Save drawing',
@@ -153,7 +188,7 @@ class _DrawingEditorScreenState extends State<DrawingEditorScreen> {
                     ),
                   ),
                 ),
-                _Tools(controller: _controller),
+                _Tools(controller: _controller, feedback: _feedback),
               ],
             ),
           ),
@@ -219,9 +254,10 @@ class _Canvas extends StatelessWidget {
 }
 
 class _Tools extends StatelessWidget {
-  const _Tools({required this.controller});
+  const _Tools({required this.controller, required this.feedback});
 
   final DrawingController controller;
+  final UiFeedback feedback;
 
   @override
   Widget build(BuildContext context) {
@@ -255,7 +291,10 @@ class _Tools extends StatelessWidget {
                 ),
               ],
               selected: {controller.tool},
-              onSelectionChanged: (s) => controller.selectTool(s.first),
+              onSelectionChanged: (s) {
+                feedback.play(FeedbackEvent.select);
+                controller.selectTool(s.first);
+              },
             ),
             Wrap(
               spacing: 4,
@@ -264,7 +303,10 @@ class _Tools extends StatelessWidget {
                   _Swatch(
                     argb: c,
                     selected: controller.color == c,
-                    onTap: () => controller.selectColor(c),
+                    onTap: () {
+                      feedback.play(FeedbackEvent.select);
+                      controller.selectColor(c);
+                    },
                   ),
               ],
             ),
@@ -277,6 +319,7 @@ class _Tools extends StatelessWidget {
                   max: 0.03,
                   value: controller.width,
                   onChanged: controller.setWidth,
+                  onChangeEnd: (_) => feedback.play(FeedbackEvent.select),
                 ),
               ),
             ),

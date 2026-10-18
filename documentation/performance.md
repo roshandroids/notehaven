@@ -21,6 +21,10 @@ What is already done, and how to check it. No benchmark numbers are claimed; mea
 - Drawings: finished strokes sit in their own `RepaintBoundary` and repaint only when the stroke list changes; only the active stroke repaints on pointer moves. Strokes are simplified (Douglas-Peucker) and capped at 200 KB per drawing.
 - The notes list loads the full `content` column for every note; with many large drawings, select only list columns.
 
+## Feedback and motion
+- Animations are one-shot and bounded: first 12 cards only, empty state, FAB; the only repeating animation is the sync icon rotation, and only while a sync runs. All are skipped when `reduceMotion(context)` is true (OS flag or the Animations setting, which sets `disableAnimations` for the whole app).
+- Haptics fire only on discrete events (stroke start/end, not per pointer move). The audio player is created on the first sound, so nothing loads while sounds are off. Tones are ~0.1–0.2 s of 22 kHz mono PCM built on demand.
+
 ## Not done yet
 - Pagination for very large note counts (the list loads all matches).
 - Full-text search (`LIKE` scans the table; fine for thousands of notes, not millions).

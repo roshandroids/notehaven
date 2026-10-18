@@ -7,9 +7,14 @@ import 'package:notehaven_app/features/notes/data/in_memory_note_repository.dart
 import 'package:notehaven_app/features/notes/presentation/note_providers.dart';
 import 'package:notehaven_app/features/settings/data/in_memory_settings_repository.dart';
 import 'package:notehaven_app/features/settings/presentation/settings_providers.dart';
+import 'package:notehaven_app/shared/feedback/ui_feedback.dart';
+
+import '../../support/fake_feedback.dart';
 
 void main() {
   late InMemoryNoteRepository repo;
+  final feedback = FakeUiFeedback();
+  setUp(feedback.events.clear);
 
   Future<void> pumpApp(WidgetTester tester) async {
     repo = InMemoryNoteRepository();
@@ -20,6 +25,7 @@ void main() {
           settingsRepositoryProvider.overrideWithValue(
             InMemorySettingsRepository(),
           ),
+          feedbackProvider.overrideWithValue(feedback),
         ],
         child: const App(),
       ),
@@ -100,5 +106,45 @@ void main() {
     await tester.tap(find.text('Undo'));
     await tester.pumpAndSettle();
     expect(find.text('Temp'), findsOneWidget);
+  });
+
+  testWidgets('saving confirms with feedback and a snackbar', (tester) async {
+    await pumpApp(tester);
+    await addNote(tester, 'Groceries', 'milk');
+    expect(feedback.events, [FeedbackEvent.success]);
+    expect(find.text('Note saved'), findsOneWidget);
+  });
+
+  testWidgets('long-press menu deletes and undo restores', (tester) async {
+    await pumpApp(tester);
+    await addNote(tester, 'Groceries', 'milk');
+    feedback.events.clear();
+
+    await tester.longPress(find.text('Groceries'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete note'));
+    await tester.pumpAndSettle();
+    expect(find.text('Groceries'), findsNothing);
+    expect(find.text('Note deleted'), findsOneWidget);
+
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+    expect(find.text('Groceries'), findsOneWidget);
+    expect(feedback.events, [
+      FeedbackEvent.tap,
+      FeedbackEvent.delete,
+      FeedbackEvent.undo,
+    ]);
+  });
+
+  testWidgets('long-press menu copies a note', (tester) async {
+    await pumpApp(tester);
+    await addNote(tester, 'Groceries', 'milk');
+    await tester.longPress(find.text('Groceries'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Copy note'));
+    await tester.pumpAndSettle();
+    expect(find.text('Groceries (copy)'), findsOneWidget);
+    expect(find.text('Note copied'), findsOneWidget);
   });
 }
