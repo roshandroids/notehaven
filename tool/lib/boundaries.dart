@@ -63,6 +63,12 @@ bool _isFlutter(String target) =>
     target.startsWith('package:flutter/') ||
     target.startsWith('package:flutter_');
 
+const _purePackages = [
+  'notehaven_core',
+  'notehaven_sync',
+  'notehaven_sync_rest',
+];
+
 bool _isDrift(String target) => target.startsWith('package:drift');
 
 Iterable<String> _rules(String rel, String target, String? resolved) sync* {
@@ -103,8 +109,16 @@ Iterable<String> _rules(String rel, String target, String? resolved) sync* {
       target.startsWith('package:notehaven_app/')) {
     yield 'packages must not import the app';
   }
-  // 6. notehaven_core stays pure Dart.
-  if (rel.startsWith('packages/notehaven_core/') && _isFlutter(target)) {
-    yield 'notehaven_core must not import Flutter';
+  // 6. pure-Dart packages stay free of Flutter, and the sync packages also
+  //    stay free of any database or vendor SDK.
+  final pure = _purePackages.firstWhere(
+    (p) => rel.startsWith('packages/$p/'),
+    orElse: () => '',
+  );
+  if (pure.isNotEmpty) {
+    if (_isFlutter(target)) yield '$pure must not import Flutter';
+    if (pure.startsWith('notehaven_sync') && _isDrift(target)) {
+      yield '$pure must not import drift';
+    }
   }
 }

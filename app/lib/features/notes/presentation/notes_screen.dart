@@ -15,6 +15,7 @@ import '../../../shared/widgets/search_input.dart';
 import '../domain/note.dart';
 import 'note_actions.dart';
 import 'note_providers.dart';
+import 'sync_status_button.dart';
 
 /// Note list: masonry grid, debounced search, swipe actions, Ctrl/Cmd+N.
 class NotesScreen extends ConsumerWidget {
@@ -44,6 +45,7 @@ class NotesScreen extends ConsumerWidget {
           appBar: AppBar(
             title: const Text('Notehaven'),
             actions: [
+              const SyncStatusButton(),
               IconButton(
                 tooltip: 'Appearance',
                 icon: const Icon(Icons.palette_outlined),

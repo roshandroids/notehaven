@@ -16,13 +16,14 @@ scripts/verify.sh   # format, analyze, boundary check, all tests
 - `app/lib/app/` composition root (bootstrap, router, theme). Only place binding interfaces to implementations.
 - `app/lib/features/<f>/{domain,data,presentation}/` one folder per feature.
 - `packages/notehaven_core` pure Dart (Result, Failure). Never imports Flutter.
+- `packages/notehaven_sync` pure Dart sync engine + ports; `notehaven_sync_rest` HTTP reference adapter. Never import Flutter or Drift.
 - `tool/` repo tooling (`check_boundaries`).
 
 ## Rules (enforced by `tool/bin/check_boundaries.dart`)
 - `domain` imports no Flutter, `data`, or `presentation`.
 - `presentation` uses `domain` interfaces, never `data`.
 - A feature never imports another feature or `app/`.
-- Packages never import the app; `notehaven_core` never imports Flutter.
+- Packages never import the app; pure packages (`notehaven_core`, `notehaven_sync`, `notehaven_sync_rest`) never import Flutter, and the sync packages never import Drift.
 
 ## Conventions
 - Hand-written Riverpod `Notifier`/`AsyncNotifier`; check `ref.mounted` after every `await` that sets state.

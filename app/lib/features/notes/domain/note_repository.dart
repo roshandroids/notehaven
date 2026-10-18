@@ -20,6 +20,7 @@ abstract interface class NoteRepository {
   /// Removes the note with [id]. Deleting a missing id succeeds.
   Future<Result<void>> delete(String id);
 
-  /// Re-inserts [note] exactly as given (used by "undo delete").
+  /// Brings [note] back (used by "undo delete") with a fresh edit time, so the
+  /// restore wins over the earlier delete when devices sync.
   Future<Result<void>> restore(Note note);
 }

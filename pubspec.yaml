@@ -6,4 +6,6 @@ environment:
 workspace:
   - app
   - packages/notehaven_core
+  - packages/notehaven_sync
+  - packages/notehaven_sync_rest
   - tool

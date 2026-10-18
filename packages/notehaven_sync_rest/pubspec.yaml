@@ -1,0 +1,14 @@
+name: notehaven_sync_rest
+description: Reference HTTP/REST adapter for notehaven_sync's RemoteNoteStore (pure Dart, no vendor SDK).
+version: 0.1.0
+publish_to: none
+resolution: workspace
+environment:
+  sdk: ^3.12.2
+dependencies:
+  http: ^1.2.0
+  notehaven_sync:
+    path: ../notehaven_sync
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.0

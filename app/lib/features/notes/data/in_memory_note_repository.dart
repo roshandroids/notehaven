@@ -77,7 +77,7 @@ class InMemoryNoteRepository implements NoteRepository {
 
   @override
   Future<Result<void>> restore(Note note) async {
-    _notes[note.id] = note;
+    _notes[note.id] = note.copyWith(updatedAt: DateTime.now());
     _notify();
     return const Ok(null);
   }

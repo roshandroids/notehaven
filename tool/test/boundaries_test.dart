@@ -84,4 +84,21 @@ void main() {
     );
     expect(checkBoundaries(root.path).single.rule, contains('notehaven_core'));
   });
+
+  test('sync packages must not import drift or Flutter', () {
+    write(
+      'packages/notehaven_sync/lib/x.dart',
+      "import 'package:drift/drift.dart';",
+    );
+    write(
+      'packages/notehaven_sync_rest/lib/y.dart',
+      "import 'package:flutter/foundation.dart';",
+    );
+    final rules = checkBoundaries(root.path).map((v) => v.rule).toList()
+      ..sort();
+    expect(rules, [
+      'notehaven_sync must not import drift',
+      'notehaven_sync_rest must not import Flutter',
+    ]);
+  });
 }

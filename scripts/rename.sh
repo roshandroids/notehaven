@@ -15,10 +15,14 @@ for f in $FILES; do
   [[ -f "$f" ]] || continue
   [[ "$f" == scripts/rename.sh ]] && continue
   grep -Iq . "$f" || continue
-  perl -pi -e "s/notehaven_/${NAME}_/g; s/package:notehaven_/package:${NAME}_/g; s/Notehaven/${DISPLAY}/g" "$f"
+  perl -pi -e "s/notehaven_/${NAME}_/g; s/package:notehaven_/package:${NAME}_/g; s/Notehaven/${DISPLAY}/g; s/name: 'notehaven'/name: '${NAME}'/g" "$f"
 done
-if [[ -d packages/notehaven_core ]]; then
-  mv packages/notehaven_core "packages/${NAME}_core"
-  mv "packages/${NAME}_core/lib/notehaven_core.dart" "packages/${NAME}_core/lib/${NAME}_core.dart"
-fi
+# Rename every packages/notehaven_* folder and its notehaven_*.dart barrel.
+for dir in packages/notehaven_*; do
+  [[ -d "$dir" ]] || continue
+  suffix="${dir#packages/notehaven_}"
+  mv "$dir" "packages/${NAME}_${suffix}"
+  barrel="packages/${NAME}_${suffix}/lib/notehaven_${suffix}.dart"
+  [[ -f "$barrel" ]] && mv "$barrel" "packages/${NAME}_${suffix}/lib/${NAME}_${suffix}.dart"
+done
 echo "Renamed. Run: fvm flutter pub get && scripts/verify.sh"

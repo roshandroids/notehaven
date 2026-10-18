@@ -14,5 +14,7 @@ $FLUTTER analyze
 $DART run tool/bin/check_boundaries.dart
 (cd tool && $DART test)
 (cd packages/notehaven_core && $DART test)
+(cd packages/notehaven_sync && $DART test)
+(cd packages/notehaven_sync_rest && $DART test)
 (cd app && $FLUTTER test)
 echo "verify: all checks passed"
