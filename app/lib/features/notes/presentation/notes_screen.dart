@@ -12,6 +12,7 @@ import 'package:intl/intl.dart';
 
 import '../../../shared/feedback/ui_feedback.dart';
 import '../../../shared/layout/layout.dart';
+import '../../../shared/widgets/illustration.dart';
 import '../../../shared/widgets/search_input.dart';
 import '../domain/note.dart';
 import 'note_actions.dart';
@@ -88,8 +89,13 @@ class NotesScreen extends ConsumerWidget {
             data: (items) => items.isEmpty
                 ? _EmptyState(searching: searching)
                 : _NoteGrid(items: items, selectedId: selectedId, grid: grid),
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('Could not load notes: $e')),
+            loading: () =>
+                const Center(child: Illustration(IllustrationKind.loading)),
+            error: (e, _) => IllustratedMessage(
+              kind: IllustrationKind.error,
+              title: 'Could not load notes',
+              subtitle: '$e',
+            ),
           ),
         ),
       ),
@@ -146,28 +152,10 @@ class _EmptyState extends StatelessWidget {
   final bool searching;
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            searching ? Icons.search_off : Icons.lightbulb_outline,
-            size: 96,
-            color: theme.colorScheme.outlineVariant,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            searching ? 'No matching notes' : 'Notes you add appear here',
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: theme.colorScheme.outline,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => IllustratedMessage(
+    kind: searching ? IllustrationKind.search : IllustrationKind.empty,
+    title: searching ? 'No matching notes' : 'Notes you add appear here',
+  );
 }
 
 class _NoteGrid extends StatelessWidget {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -167,24 +168,24 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
             if (widget.note != null)
               IconButton(
                 tooltip: 'Delete',
-                icon: const Icon(Icons.delete_outline),
+                icon: const Icon(Symbols.delete_rounded),
                 onPressed: _delete,
               ),
             IconButton(
               tooltip: 'Insert drawing',
-              icon: const Icon(Icons.draw_outlined),
+              icon: const Icon(Symbols.draw_rounded),
               onPressed: _insertDrawing,
             ),
             IconButton(
               tooltip: 'Save',
-              icon: const Icon(Icons.check),
+              icon: const Icon(Symbols.check_rounded),
               onPressed: _save,
             ),
           ],
         ),
         body: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720),
+            constraints: const BoxConstraints(maxWidth: 860),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -199,18 +200,41 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
                       border: InputBorder.none,
                     ),
                   ),
-                  QuillSimpleToolbar(
-                    controller: _quill,
-                    config: const QuillSimpleToolbarConfig(
-                      // One scrollable row, so it never wraps on a narrow pane.
-                      multiRowsDisplay: false,
-                      showSearchButton: false,
-                      showSubscript: false,
-                      showSuperscript: false,
-                      showFontFamily: false,
-                      showFontSize: false,
-                      showInlineCode: false,
-                      showClearFormat: false,
+                  Material(
+                    color: theme.colorScheme.surfaceContainerHigh,
+                    borderRadius: BorderRadius.circular(12),
+                    child: QuillSimpleToolbar(
+                      controller: _quill,
+                      config: QuillSimpleToolbarConfig(
+                        // Word-style ribbon: wraps onto extra rows instead of scrolling.
+                        multiRowsDisplay: true,
+                        showSubscript: true,
+                        showSuperscript: true,
+                        showFontFamily: true,
+                        showFontSize: true,
+                        showInlineCode: false,
+                        showClearFormat: true,
+                        showAlignmentButtons: true,
+                        showLink: true,
+                        showSearchButton: true,
+                        buttonOptions: QuillSimpleToolbarButtonOptions(
+                          bold: _toggle(Symbols.format_bold_rounded),
+                          italic: _toggle(Symbols.format_italic_rounded),
+                          underLine: _toggle(Symbols.format_underlined_rounded),
+                          strikeThrough: _toggle(
+                            Symbols.format_strikethrough_rounded,
+                          ),
+                          subscript: _toggle(Symbols.subscript_rounded),
+                          superscript: _toggle(Symbols.superscript_rounded),
+                          listBullets: _toggle(
+                            Symbols.format_list_bulleted_rounded,
+                          ),
+                          listNumbers: _toggle(
+                            Symbols.format_list_numbered_rounded,
+                          ),
+                          quote: _toggle(Symbols.format_quote_rounded),
+                        ),
+                      ),
                     ),
                   ),
                   const Divider(height: 1),
@@ -252,3 +276,6 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
     );
   }
 }
+
+QuillToolbarToggleStyleButtonOptions _toggle(IconData icon) =>
+    QuillToolbarToggleStyleButtonOptions(iconData: icon);

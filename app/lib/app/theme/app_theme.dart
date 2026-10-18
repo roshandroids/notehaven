@@ -62,8 +62,32 @@ AppThemes buildThemes(AppSettings settings) {
   );
 
   return AppThemes(
-    light: withFont(FlexThemeData.light(scheme: scheme, useMaterial3: true)),
-    dark: withFont(FlexThemeData.dark(scheme: scheme, useMaterial3: true)),
+    light: withFont(
+      FlexThemeData.light(
+        scheme: scheme,
+        useMaterial3: true,
+        surfaceMode: FlexSurfaceMode.highScaffoldLowSurface,
+        blendLevel: 8,
+        subThemesData: const FlexSubThemesData(
+          defaultRadius: 14,
+          inputDecoratorBorderType: FlexInputBorderType.outline,
+          fabUseShape: true,
+        ),
+      ),
+    ),
+    dark: withFont(
+      FlexThemeData.dark(
+        scheme: scheme,
+        useMaterial3: true,
+        surfaceMode: FlexSurfaceMode.highScaffoldLowSurface,
+        blendLevel: 12,
+        subThemesData: const FlexSubThemesData(
+          defaultRadius: 14,
+          inputDecoratorBorderType: FlexInputBorderType.outline,
+          fabUseShape: true,
+        ),
+      ),
+    ),
   );
 }
 

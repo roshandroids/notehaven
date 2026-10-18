@@ -31,7 +31,8 @@ dependencies:
   shared_preferences: ^2.5.6
   uuid: ^4.6.0
   audioplayers: ^6.8.1
-
+  flutter_svg: ^2.3.0
+  material_symbols_icons: ^4.2960.0
 dev_dependencies:
   # shortcut: drift_dev is capped below 2.34.6 (needs analyzer >=13, but test/flutter_test pin
   # analyzer <13); drift is pinned to the same range. Lift when Flutter's pinned test_api allows it.
@@ -48,6 +49,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/CHANGELOG.md
+    - assets/illustrations/
 
 # Regenerate with: dart run flutter_launcher_icons && dart run flutter_native_splash:create
 flutter_launcher_icons:

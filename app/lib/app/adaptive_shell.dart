@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/notes/presentation/notes_screen.dart';
 import '../shared/layout/layout.dart';
+import '../shared/widgets/illustration.dart';
 
 /// Wraps the notes routes. Narrow windows show one screen at a time; wide
 /// windows (see [splitViewMinWidth]) keep the list on the left and show the
@@ -55,7 +56,8 @@ class _AdaptiveShellState extends State<AdaptiveShell> {
             ),
           ),
         ),
-        Expanded(child: widget.child),
+        // Own messenger: a shared one shows each snackbar in both Scaffolds.
+        Expanded(child: ScaffoldMessenger(child: widget.child)),
       ],
     );
   }
@@ -67,22 +69,11 @@ class SelectNotePlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.description_outlined,
-              size: 72,
-              color: theme.colorScheme.outline,
-            ),
-            const SizedBox(height: 12),
-            Text('Select a note', style: theme.textTheme.titleMedium),
-            const Text('or press Ctrl/Cmd+N to write a new one.'),
-          ],
-        ),
+    return const Scaffold(
+      body: IllustratedMessage(
+        kind: IllustrationKind.select,
+        title: 'Select a note',
+        subtitle: 'or press Ctrl/Cmd+N to write a new one.',
       ),
     );
   }

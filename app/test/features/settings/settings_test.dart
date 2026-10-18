@@ -193,10 +193,15 @@ void main() {
     final target = FlexScheme.values.firstWhere(
       (s) => s != FlexScheme.custom && s.name != AppSettings.defaultSchemeName,
     );
+    await tester.tap(find.text('Color theme'));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(Key('scheme-${target.name}')));
     await tester.pumpAndSettle();
 
     expect(settingsRepo.settings.schemeName, target.name);
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text('Dark'));
     await tester.pumpAndSettle();
