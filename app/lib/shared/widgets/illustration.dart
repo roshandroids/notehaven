@@ -6,7 +6,18 @@ import '../layout/layout.dart';
 
 /// Which scene an [Illustration] draws; each maps to an unDraw SVG
 /// (https://undraw.co, free license) in `assets/illustrations/`.
-enum IllustrationKind { empty, search, select, error, loading }
+enum IllustrationKind {
+  empty,
+  search,
+  select,
+  error,
+  loading,
+  saved,
+  deleted,
+  sync,
+  onboarding,
+  offline,
+}
 
 /// Theme-tinted SVG scene with a gentle idle animation (static when the OS
 /// asks to reduce motion). Colors come from the active [ColorScheme] so it
