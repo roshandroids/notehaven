@@ -24,7 +24,9 @@ jobs:
         with:
           flutter-version: 3.44.8
           channel: stable
-      - run: FLUTTER=flutter DART=dart scripts/verify.sh
+      - run: flutter pub get
+      - run: dart run build_runner build
+        working-directory: app
       - name: Build web
         working-directory: app
         run: |

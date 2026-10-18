@@ -18,17 +18,29 @@ on:
         default: false
 
 jobs:
+  # A job-level `if` cannot read `matrix`, so build the matrix from the ticked inputs.
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      include: ${{ steps.p.outputs.include }}
+    steps:
+      - id: p
+        run: |
+          j='[]'
+          add() { j=$(jq -c --arg id "$1" --arg os "$2" '. + [{id:$id,os:$os}]' <<<"$j"); }
+          [ "${{ inputs.macos }}" = true ] && add macos macos-latest
+          [ "${{ inputs.windows }}" = true ] && add windows windows-latest
+          [ "${{ inputs.android }}" = true ] && add android ubuntu-latest
+          echo "include=$j" >> "$GITHUB_OUTPUT"
+
   build:
+    needs: plan
+    if: ${{ needs.plan.outputs.include != '[]' }}
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { id: macos, os: macos-latest }
-          - { id: windows, os: windows-latest }
-          - { id: android, os: ubuntu-latest }
+        include: ${{ fromJSON(needs.plan.outputs.include) }}
     runs-on: ${{ matrix.os }}
-    # Matrix legs for unticked platforms are skipped without using a runner.
-    if: ${{ inputs[matrix.id] }}
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
