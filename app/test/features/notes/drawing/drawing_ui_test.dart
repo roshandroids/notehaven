@@ -75,6 +75,8 @@ void main() {
     ) async {
       await open(tester);
       await scribble(tester);
+      await tester.tap(find.byTooltip('Drawing tools'));
+      await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('Highlighter'));
       await tester.tap(find.byTooltip('Clear drawing'));
       await tester.pump(const Duration(milliseconds: 500));
@@ -89,6 +91,7 @@ void main() {
       expect(feedback.events, [
         FeedbackEvent.strokeStart,
         FeedbackEvent.strokeEnd,
+        FeedbackEvent.tap,
         FeedbackEvent.select,
         FeedbackEvent.delete,
         FeedbackEvent.undo,
@@ -160,6 +163,8 @@ void main() {
     testWidgets('tools are labeled for screen readers', (tester) async {
       final handle = tester.ensureSemantics();
       await open(tester);
+      await tester.tap(find.byTooltip('Drawing tools'));
+      await tester.pumpAndSettle();
       expect(find.bySemanticsLabel(RegExp('Color red')), findsOneWidget);
       expect(find.byTooltip('Pen'), findsOneWidget);
       expect(find.byTooltip('Eraser (removes whole strokes)'), findsOneWidget);

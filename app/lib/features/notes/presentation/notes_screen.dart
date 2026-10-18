@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -9,8 +10,10 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../shared/feedback/ui_feedback.dart';
+import '../../../app/theme/tokens.dart';
 import '../../../shared/layout/layout.dart';
 import '../../../shared/widgets/illustration.dart';
 import '../../../shared/widgets/search_input.dart';
@@ -192,7 +195,11 @@ class _NoteGrid extends StatelessWidget {
         final note = items[i];
         final card = RepaintBoundary(
           key: ValueKey(note.id),
-          child: _NoteCard(note: note, selected: note.id == selectedId),
+          child: _NoteCard(
+            note: note,
+            selected: note.id == selectedId,
+            grid: grid,
+          ),
         );
         return i < _animatedCount && !reduceMotion(context)
             ? card
@@ -205,17 +212,41 @@ class _NoteGrid extends StatelessWidget {
   }
 }
 
-class _NoteCard extends ConsumerWidget {
-  const _NoteCard({required this.note, required this.selected});
+class _NoteCard extends ConsumerStatefulWidget {
+  const _NoteCard({
+    required this.note,
+    required this.selected,
+    required this.grid,
+  });
 
   final Note note;
   final bool selected;
+
+  /// Grid cards are too narrow for swipe actions; they use the long-press menu.
+  final bool grid;
+
+  @override
+  ConsumerState<_NoteCard> createState() => _NoteCardState();
+}
+
+class _NoteCardState extends ConsumerState<_NoteCard> {
+  Note get note => widget.note;
+  bool get selected => widget.selected;
+  bool get grid => widget.grid;
+
+  /// True while the card plays its exit animation before the delete lands.
+  bool _leaving = false;
 
   Future<void> _delete(BuildContext context, WidgetRef ref) async {
     final feedback = ref.read(feedbackProvider)..play(FeedbackEvent.delete);
     final actions = ref.read(noteActionsProvider);
     final messenger = ScaffoldMessenger.of(context);
+    if (!reduceMotion(context)) {
+      setState(() => _leaving = true);
+      await Future<void>.delayed(AppMotion.medium);
+    }
     final failure = await actions.delete(note.id);
+    if (failure != null && mounted) setState(() => _leaving = false);
     messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -248,41 +279,86 @@ class _NoteCard extends ConsumerWidget {
       );
   }
 
-  /// Long-press / right-click menu: the same actions as the swipe pane, for
-  /// mouse and keyboard users who cannot swipe.
-  Future<void> _showMenu(BuildContext context, WidgetRef ref) async {
+  String get _shareText {
+    final title = note.title.isEmpty ? 'Untitled' : note.title;
+    return note.body.isEmpty ? title : '$title\n\n${note.body}';
+  }
+
+  /// Long-press / right-click popup anchored at [position].
+  Future<void> _showMenu(
+    BuildContext context,
+    WidgetRef ref,
+    Offset position,
+    VoidCallback open,
+  ) async {
     ref.read(feedbackProvider).play(FeedbackEvent.tap);
-    final choice = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.copy_outlined),
-              title: const Text('Copy note'),
-              onTap: () => Navigator.pop(context, 'copy'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline),
-              title: const Text('Delete note'),
-              onTap: () => Navigator.pop(context, 'delete'),
-            ),
-          ],
-        ),
+    final overlay =
+        Overlay.of(context).context.findRenderObject()! as RenderBox;
+    final danger = Theme.of(context).colorScheme.error;
+    PopupMenuItem<String> item(
+      String v,
+      IconData icon,
+      String label, {
+      Color? c,
+    }) => PopupMenuItem(
+      value: v,
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: c),
+          const SizedBox(width: 12),
+          Text(label, style: c == null ? null : TextStyle(color: c)),
+        ],
       ),
     );
+    final choice = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromRect(
+        position & const Size(1, 1),
+        Offset.zero & overlay.size,
+      ),
+      items: [
+        item('open', Icons.edit_outlined, 'Open'),
+        item('copy', Icons.copy_outlined, 'Copy note'),
+        item('share', Icons.ios_share, 'Share'),
+        item('export', Icons.download_outlined, 'Export as text'),
+        const PopupMenuDivider(),
+        item('delete', Icons.delete_outline, 'Delete note', c: danger),
+      ],
+    );
     if (!context.mounted) return;
-    if (choice == 'copy') {
-      await _duplicate(context, ref);
-    } else if (choice == 'delete') {
-      await _delete(context, ref);
+    switch (choice) {
+      case 'open':
+        open();
+      case 'copy':
+        await _duplicate(context, ref);
+      case 'share':
+        await SharePlus.instance.share(
+          ShareParams(text: _shareText, title: note.title),
+        );
+      case 'export':
+        final name = (note.title.isEmpty ? 'note' : note.title).replaceAll(
+          RegExp(r'[^\w\- ]'),
+          '_',
+        );
+        await SharePlus.instance.share(
+          ShareParams(
+            files: [
+              XFile.fromData(
+                Uint8List.fromList(utf8.encode(_shareText)),
+                mimeType: 'text/plain',
+                name: '$name.txt',
+              ),
+            ],
+            fileNameOverrides: ['$name.txt'],
+          ),
+        );
+      case 'delete':
+        await _delete(context, ref);
     }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final title = note.title.isEmpty ? 'Untitled' : note.title;
@@ -291,6 +367,40 @@ class _NoteCard extends ConsumerWidget {
         ? context.go('/notes/${note.id}')
         : context.push('/notes/${note.id}');
     final edited = DateFormat.yMMMd().add_jm().format(note.updatedAt);
+    final card = Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      color: selected ? scheme.secondaryContainer : null,
+      child: InkWell(
+        onTap: open,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: SizedBox(
+            width: double.infinity,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleMedium,
+                ),
+                if (note.body.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    note.body,
+                    maxLines: 6,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
     return Semantics(
       // One focus stop per note; swipe actions are exposed as custom actions
       // so screen-reader users can copy or delete without a swipe gesture.
@@ -309,62 +419,45 @@ class _NoteCard extends ConsumerWidget {
             _delete(context, ref),
       },
       excludeSemantics: true,
-      child: Slidable(
-        key: ValueKey(note.id),
-        endActionPane: ActionPane(
-          motion: const DrawerMotion(),
-          extentRatio: 0.5,
-          children: [
-            SlidableAction(
-              onPressed: (_) => _duplicate(context, ref),
-              icon: Icons.copy_outlined,
-              label: 'Copy',
-              backgroundColor: scheme.secondaryContainer,
-              foregroundColor: scheme.onSecondaryContainer,
-            ),
-            SlidableAction(
-              onPressed: (_) => _delete(context, ref),
-              icon: Icons.delete_outline,
-              label: 'Delete',
-              backgroundColor: scheme.errorContainer,
-              foregroundColor: scheme.onErrorContainer,
-            ),
-          ],
-        ),
-        child: Card(
-          margin: EdgeInsets.zero,
-          clipBehavior: Clip.antiAlias,
-          color: selected ? scheme.secondaryContainer : null,
-          child: InkWell(
-            onTap: open,
-            onLongPress: () => _showMenu(context, ref),
-            onSecondaryTap: () => _showMenu(context, ref),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: SizedBox(
-                width: double.infinity,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleMedium,
+      child: AnimatedScale(
+        scale: _leaving ? 0.85 : 1,
+        duration: AppMotion.medium,
+        curve: Curves.easeIn,
+        child: AnimatedOpacity(
+          opacity: _leaving ? 0 : 1,
+          duration: AppMotion.medium,
+          child: GestureDetector(
+            behavior: HitTestBehavior.deferToChild,
+            onLongPressStart: (d) =>
+                _showMenu(context, ref, d.globalPosition, open),
+            onSecondaryTapDown: (d) =>
+                _showMenu(context, ref, d.globalPosition, open),
+            child: grid
+                ? card
+                : Slidable(
+                    key: ValueKey(note.id),
+                    endActionPane: ActionPane(
+                      motion: const DrawerMotion(),
+                      extentRatio: 0.5,
+                      children: [
+                        SlidableAction(
+                          onPressed: (_) => _duplicate(context, ref),
+                          icon: Icons.copy_outlined,
+                          label: 'Copy',
+                          backgroundColor: scheme.secondaryContainer,
+                          foregroundColor: scheme.onSecondaryContainer,
+                        ),
+                        SlidableAction(
+                          onPressed: (_) => _delete(context, ref),
+                          icon: Icons.delete_outline,
+                          label: 'Delete',
+                          backgroundColor: scheme.errorContainer,
+                          foregroundColor: scheme.onErrorContainer,
+                        ),
+                      ],
                     ),
-                    if (note.body.isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        note.body,
-                        maxLines: 6,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
+                    child: card,
+                  ),
           ),
         ),
       ),

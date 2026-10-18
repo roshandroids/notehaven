@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../app/theme/tokens.dart';
+
 /// Rounded search field. Built on `TextField` (not `SearchBar`) so the whole
 /// 56 px height is one tap target for screen readers and touch.
 class SearchInput extends StatelessWidget {
@@ -22,11 +24,20 @@ class SearchInput extends StatelessWidget {
         hintText: hintText,
         prefixIcon: const Icon(Icons.search),
         filled: true,
-        fillColor: scheme.surfaceContainerHigh,
+        fillColor: scheme.surfaceContainerHighest,
         contentPadding: const EdgeInsets.symmetric(vertical: 16),
+        // Outline keeps the field visible when the fill is close to the page.
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(28),
-          borderSide: BorderSide.none,
+          borderRadius: BorderRadius.circular(AppRadius.field),
+          borderSide: BorderSide(color: scheme.outlineVariant),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.field),
+          borderSide: BorderSide(color: scheme.outlineVariant),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.field),
+          borderSide: BorderSide(color: scheme.primary, width: 2),
         ),
       ),
     );

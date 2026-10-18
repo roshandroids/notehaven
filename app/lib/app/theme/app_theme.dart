@@ -1,9 +1,11 @@
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../features/settings/domain/app_settings.dart';
+import 'tokens.dart';
 import '../../features/settings/presentation/settings_providers.dart';
 
 /// Light and dark [ThemeData] for one [AppSettings] value.
@@ -32,7 +34,11 @@ AppThemes buildThemes(AppSettings settings) {
 
   // Keep-style minimal chrome: flat bars, outlined cards, no tint or shadow.
   ThemeData minimal(ThemeData base) => base.copyWith(
-    appBarTheme: const AppBarTheme(
+    appBarTheme: AppBarTheme(
+      // AppBar's own overlay style would otherwise win over the app-wide one.
+      systemOverlayStyle: base.brightness == Brightness.dark
+          ? SystemUiOverlayStyle.light
+          : SystemUiOverlayStyle.dark,
       scrolledUnderElevation: 0,
       surfaceTintColor: Colors.transparent,
       backgroundColor: Colors.transparent,
@@ -41,7 +47,7 @@ AppThemes buildThemes(AppSettings settings) {
       elevation: 0,
       color: Colors.transparent,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         side: BorderSide(color: base.colorScheme.outlineVariant),
       ),
     ),
@@ -69,7 +75,7 @@ AppThemes buildThemes(AppSettings settings) {
         surfaceMode: FlexSurfaceMode.highScaffoldLowSurface,
         blendLevel: 8,
         subThemesData: const FlexSubThemesData(
-          defaultRadius: 14,
+          defaultRadius: AppRadius.card,
           inputDecoratorBorderType: FlexInputBorderType.outline,
           fabUseShape: true,
         ),
@@ -82,7 +88,7 @@ AppThemes buildThemes(AppSettings settings) {
         surfaceMode: FlexSurfaceMode.highScaffoldLowSurface,
         blendLevel: 12,
         subThemesData: const FlexSubThemesData(
-          defaultRadius: 14,
+          defaultRadius: AppRadius.card,
           inputDecoratorBorderType: FlexInputBorderType.outline,
           fabUseShape: true,
         ),

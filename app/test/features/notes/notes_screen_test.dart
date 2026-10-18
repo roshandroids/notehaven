@@ -88,6 +88,9 @@ void main() {
   testWidgets('swipe Copy duplicates the note', (tester) async {
     await pumpApp(tester);
     await addNote(tester, 'Plan', 'body');
+    // Swipe actions exist in list view only; grid cards use the long-press menu.
+    await tester.tap(find.byTooltip('List view'));
+    await tester.pumpAndSettle();
     await tester.drag(find.text('Plan'), const Offset(-400, 0));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Copy'));
@@ -98,6 +101,9 @@ void main() {
   testWidgets('delete removes the note and undo restores it', (tester) async {
     await pumpApp(tester);
     await addNote(tester, 'Temp', 'x');
+    // Swipe actions exist in list view only; grid cards use the long-press menu.
+    await tester.tap(find.byTooltip('List view'));
+    await tester.pumpAndSettle();
     await tester.drag(find.text('Temp'), const Offset(-400, 0));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));

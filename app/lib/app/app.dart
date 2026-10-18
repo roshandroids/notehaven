@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart'
     show FlutterQuillLocalizations;
@@ -31,12 +32,25 @@ class App extends ConsumerWidget {
       supportedLocales: FlutterQuillLocalizations.supportedLocales,
       routerConfig: ref.watch(routerProvider),
       // "Reduced" in settings behaves exactly like the OS reduce-motion flag.
-      builder: (context, child) => reduceMotionSetting
-          ? MediaQuery(
-              data: MediaQuery.of(context).copyWith(disableAnimations: true),
-              child: child!,
-            )
-          : child!,
+      builder: (context, child) {
+        final dark = Theme.of(context).brightness == Brightness.dark;
+        // Status bar icons must contrast with the page (Android: icon
+        // brightness; iOS: the bar's own brightness, so inverted).
+        final body = AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
+            statusBarBrightness: dark ? Brightness.dark : Brightness.light,
+          ),
+          child: child!,
+        );
+        return reduceMotionSetting
+            ? MediaQuery(
+                data: MediaQuery.of(context).copyWith(disableAnimations: true),
+                child: body,
+              )
+            : body;
+      },
     );
   }
 }

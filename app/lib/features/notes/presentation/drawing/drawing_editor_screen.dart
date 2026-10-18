@@ -1,10 +1,15 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/feedback/ui_feedback.dart';
+import '../../../../shared/layout/layout.dart';
 import '../../domain/drawing.dart';
 import 'drawing_controller.dart';
 import 'drawing_painter.dart';
+import 'pencil_channel.dart';
 
 /// Opens the drawing editor above everything (covering the split-view shell).
 /// Resolves to the drawing when saved, or null when cancelled. Saving with no
@@ -35,10 +40,25 @@ class _DrawingEditorScreenState extends ConsumerState<DrawingEditorScreen> {
   );
   int? _pointer;
 
+  /// Once a stylus is seen, finger touches stop drawing (palm rejection).
+  bool _stylusSeen = false;
+  final _focus = FocusNode();
+
   UiFeedback get _feedback => ref.read(feedbackProvider);
 
   @override
+  void initState() {
+    super.initState();
+    PencilChannel.attach(() {
+      _feedback.play(FeedbackEvent.select);
+      _controller.toggleEraser();
+    });
+  }
+
+  @override
   void dispose() {
+    PencilChannel.detach();
+    _focus.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -105,6 +125,8 @@ class _DrawingEditorScreenState extends ConsumerState<DrawingEditorScreen> {
   }
 
   void _pointerDown(PointerDownEvent e, Size size) {
+    if (e.kind == PointerDeviceKind.stylus) _stylusSeen = true;
+    if (_stylusSeen && e.kind == PointerDeviceKind.touch) return;
     if (_pointer != null) return; // ignore extra fingers / palm
     _pointer = e.pointer;
     final p = _normalize(e.localPosition, size);
@@ -134,8 +156,43 @@ class _DrawingEditorScreenState extends ConsumerState<DrawingEditorScreen> {
     (local.dy / size.height).clamp(0.0, 1.0),
   );
 
+  void _tool(DrawingTool t) {
+    _feedback.play(FeedbackEvent.select);
+    _controller.selectTool(t);
+  }
+
+  void _nudgeWidth(double d) =>
+      _controller.setWidth((_controller.width + d).clamp(0.002, 0.03));
+
+  /// Keyboard / Pencil-keyboard shortcuts, shown in the tooltips.
+  Map<ShortcutActivator, VoidCallback> get _shortcuts => {
+    const SingleActivator(LogicalKeyboardKey.keyZ, meta: true): _undo,
+    const SingleActivator(LogicalKeyboardKey.keyZ, control: true): _undo,
+    const SingleActivator(LogicalKeyboardKey.keyZ, meta: true, shift: true):
+        _redo,
+    const SingleActivator(LogicalKeyboardKey.keyZ, control: true, shift: true):
+        _redo,
+    const SingleActivator(LogicalKeyboardKey.keyS, meta: true): _save,
+    const SingleActivator(LogicalKeyboardKey.keyS, control: true): _save,
+    const SingleActivator(LogicalKeyboardKey.keyP): () =>
+        _tool(DrawingTool.pen),
+    const SingleActivator(LogicalKeyboardKey.keyH): () =>
+        _tool(DrawingTool.highlighter),
+    const SingleActivator(LogicalKeyboardKey.keyE): _controller.toggleEraser,
+    const SingleActivator(LogicalKeyboardKey.bracketLeft): () =>
+        _nudgeWidth(-0.002),
+    const SingleActivator(LogicalKeyboardKey.bracketRight): () =>
+        _nudgeWidth(0.002),
+    for (var i = 0; i < DrawingController.palette.length; i++)
+      SingleActivator(
+        LogicalKeyboardKey(LogicalKeyboardKey.digit1.keyId + i),
+      ): () =>
+          _controller.selectColor(DrawingController.palette[i]),
+  };
+
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return ListenableBuilder(
       listenable: _controller,
       builder: (context, _) {
@@ -144,56 +201,130 @@ class _DrawingEditorScreenState extends ConsumerState<DrawingEditorScreen> {
           onPopInvokedWithResult: (didPop, _) {
             if (!didPop) _confirmDiscard();
           },
-          child: Scaffold(
-            appBar: AppBar(
-              title: const Text('Drawing'),
-              actions: [
-                IconButton(
-                  tooltip: 'Undo',
-                  icon: const Icon(Icons.undo),
-                  onPressed: _controller.canUndo ? _undo : null,
-                ),
-                IconButton(
-                  tooltip: 'Redo',
-                  icon: const Icon(Icons.redo),
-                  onPressed: _controller.canRedo ? _redo : null,
-                ),
-                IconButton(
-                  tooltip: 'Clear drawing',
-                  icon: const Icon(Icons.delete_sweep_outlined),
-                  onPressed: _controller.strokes.isEmpty ? null : _clear,
-                ),
-                IconButton(
-                  tooltip: 'Save drawing',
-                  icon: const Icon(Icons.check),
-                  onPressed: _save,
-                ),
-              ],
-            ),
-            body: Column(
-              children: [
-                Expanded(
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 1000),
-                        child: _Canvas(
+          child: CallbackShortcuts(
+            bindings: _shortcuts,
+            child: Focus(
+              focusNode: _focus,
+              autofocus: true,
+              child: Scaffold(
+                backgroundColor: scheme.surfaceContainerLow,
+                body: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Whole screen is the page: a new drawing takes its shape.
+                    LayoutBuilder(
+                      builder: (context, box) {
+                        if (widget.initial == null || widget.initial!.isEmpty) {
+                          _controller.adoptAspectRatio(
+                            box.maxWidth / box.maxHeight,
+                          );
+                        }
+                        return Center(
+                          child: AspectRatio(
+                            aspectRatio: _controller.aspectRatio,
+                            child: _Canvas(
+                              controller: _controller,
+                              onDown: _pointerDown,
+                              onMove: _pointerMove,
+                              onUp: _pointerUp,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    SafeArea(
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: _TopBar(
                           controller: _controller,
-                          onDown: _pointerDown,
-                          onMove: _pointerMove,
-                          onUp: _pointerUp,
+                          onClose: () => Navigator.of(context).maybePop(),
+                          onUndo: _undo,
+                          onRedo: _redo,
+                          onClear: _clear,
+                          onSave: _save,
                         ),
                       ),
                     ),
-                  ),
+                    SafeArea(
+                      child: Align(
+                        alignment: Alignment.bottomRight,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: _ToolFab(
+                            controller: _controller,
+                            feedback: _feedback,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                _Tools(controller: _controller, feedback: _feedback),
-              ],
+              ),
             ),
           ),
         );
       },
+    );
+  }
+}
+
+/// Floating pill with close / undo / redo / clear / save over the page.
+class _TopBar extends StatelessWidget {
+  const _TopBar({
+    required this.controller,
+    required this.onClose,
+    required this.onUndo,
+    required this.onRedo,
+    required this.onClear,
+    required this.onSave,
+  });
+
+  final DrawingController controller;
+  final VoidCallback onClose, onUndo, onRedo, onClear, onSave;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: Material(
+        color: scheme.surface.withValues(alpha: 0.92),
+        elevation: 3,
+        shape: const StadiumBorder(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                tooltip: 'Close',
+                icon: const Icon(Icons.close),
+                onPressed: onClose,
+              ),
+              IconButton(
+                tooltip: 'Undo',
+                icon: const Icon(Icons.undo),
+                onPressed: controller.canUndo ? onUndo : null,
+              ),
+              IconButton(
+                tooltip: 'Redo',
+                icon: const Icon(Icons.redo),
+                onPressed: controller.canRedo ? onRedo : null,
+              ),
+              IconButton(
+                tooltip: 'Clear drawing',
+                icon: const Icon(Icons.delete_sweep_outlined),
+                onPressed: controller.strokes.isEmpty ? null : onClear,
+              ),
+              IconButton(
+                tooltip: 'Save drawing',
+                icon: Icon(Icons.check, color: scheme.primary),
+                onPressed: onSave,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -216,116 +347,198 @@ class _Canvas extends StatelessWidget {
     return Semantics(
       label:
           'Drawing canvas. Freehand drawing needs a touch screen, pen or mouse.',
-      child: Material(
-        elevation: 2,
-        child: AspectRatio(
-          aspectRatio: controller.aspectRatio,
-          child: LayoutBuilder(
-            builder: (context, box) {
-              final size = box.biggest;
-              return Listener(
-                key: const Key('drawing-canvas'),
-                behavior: HitTestBehavior.opaque,
-                onPointerDown: (e) => onDown(e, size),
-                onPointerMove: (e) => onMove(e, size),
-                onPointerUp: onUp,
-                onPointerCancel: onUp,
-                child: DecoratedBox(
-                  decoration: const BoxDecoration(color: drawingPaper),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      RepaintBoundary(
-                        child: CustomPaint(
-                          painter: CommittedStrokesPainter(controller.strokes),
-                        ),
-                      ),
-                      CustomPaint(painter: ActiveStrokePainter(controller)),
-                    ],
+      child: LayoutBuilder(
+        builder: (context, box) {
+          final size = box.biggest;
+          return Listener(
+            key: const Key('drawing-canvas'),
+            behavior: HitTestBehavior.opaque,
+            onPointerDown: (e) => onDown(e, size),
+            onPointerMove: (e) => onMove(e, size),
+            onPointerUp: onUp,
+            onPointerCancel: onUp,
+            child: DecoratedBox(
+              decoration: const BoxDecoration(color: drawingPaper),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  RepaintBoundary(
+                    child: CustomPaint(
+                      painter: CommittedStrokesPainter(controller.strokes),
+                    ),
                   ),
-                ),
-              );
-            },
-          ),
-        ),
+                  CustomPaint(painter: ActiveStrokePainter(controller)),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
 }
 
-class _Tools extends StatelessWidget {
-  const _Tools({required this.controller, required this.feedback});
+/// Speed-dial FAB: shows the current tool and color; tapping fans out the
+/// tools, colors and width, like the Apple Pencil palette.
+class _ToolFab extends StatefulWidget {
+  const _ToolFab({required this.controller, required this.feedback});
 
   final DrawingController controller;
   final UiFeedback feedback;
 
   @override
+  State<_ToolFab> createState() => _ToolFabState();
+}
+
+class _ToolFabState extends State<_ToolFab> {
+  bool _open = false;
+
+  static const _icons = {
+    DrawingTool.pen: (Icons.edit, 'Pen'),
+    DrawingTool.highlighter: (Icons.highlight, 'Highlighter'),
+    DrawingTool.eraser: (
+      Icons.cleaning_services_outlined,
+      'Eraser (removes whole strokes)',
+    ),
+  };
+
+  void _toggle() {
+    widget.feedback.play(FeedbackEvent.tap);
+    setState(() => _open = !_open);
+  }
+
+  Widget _reveal(BuildContext context, int i, Widget child) =>
+      reduceMotion(context)
+      ? child
+      : child
+            .animate(delay: (40 * i).ms)
+            .fadeIn(duration: 160.ms)
+            .slideY(begin: 0.4, end: 0, curve: Curves.easeOutBack)
+            .scale(begin: const Offset(0.8, 0.8));
+
+  @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-        child: Wrap(
-          alignment: WrapAlignment.center,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 16,
-          runSpacing: 8,
-          children: [
-            SegmentedButton<DrawingTool>(
-              showSelectedIcon: false,
-              segments: const [
-                ButtonSegment(
-                  value: DrawingTool.pen,
-                  icon: Icon(Icons.edit),
-                  tooltip: 'Pen',
-                ),
-                ButtonSegment(
-                  value: DrawingTool.highlighter,
-                  icon: Icon(Icons.highlight),
-                  tooltip: 'Highlighter',
-                ),
-                ButtonSegment(
-                  value: DrawingTool.eraser,
-                  icon: Icon(Icons.cleaning_services_outlined),
-                  tooltip: 'Eraser (removes whole strokes)',
-                ),
-              ],
-              selected: {controller.tool},
-              onSelectionChanged: (s) {
-                feedback.play(FeedbackEvent.select);
-                controller.selectTool(s.first);
-              },
-            ),
-            Wrap(
-              spacing: 4,
-              children: [
-                for (final c in DrawingController.palette)
-                  _Swatch(
-                    argb: c,
-                    selected: controller.color == c,
-                    onTap: () {
-                      feedback.play(FeedbackEvent.select);
-                      controller.selectColor(c);
-                    },
+    final c = widget.controller;
+    final scheme = Theme.of(context).colorScheme;
+    final (icon, _) = _icons[c.tool]!;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        if (_open) ...[
+          _reveal(
+            context,
+            3,
+            Card(
+              elevation: 3,
+              color: scheme.surface.withValues(alpha: 0.95),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: SizedBox(
+                  width: 220,
+                  child: Semantics(
+                    label: 'Pen width',
+                    child: Slider(
+                      min: 0.002,
+                      max: 0.03,
+                      value: c.width,
+                      onChanged: c.setWidth,
+                      onChangeEnd: (_) =>
+                          widget.feedback.play(FeedbackEvent.select),
+                    ),
                   ),
-              ],
-            ),
-            SizedBox(
-              width: 180,
-              child: Semantics(
-                label: 'Pen width',
-                child: Slider(
-                  min: 0.002,
-                  max: 0.03,
-                  value: controller.width,
-                  onChanged: controller.setWidth,
-                  onChangeEnd: (_) => feedback.play(FeedbackEvent.select),
                 ),
               ),
             ),
+          ),
+          const SizedBox(height: 8),
+          _reveal(
+            context,
+            2,
+            Card(
+              elevation: 3,
+              color: scheme.surface.withValues(alpha: 0.95),
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  children: [
+                    for (final color in DrawingController.palette)
+                      _Swatch(
+                        argb: color,
+                        selected: c.color == color,
+                        onTap: () {
+                          widget.feedback.play(FeedbackEvent.select);
+                          c.selectColor(color);
+                        },
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          for (final (i, t) in DrawingTool.values.reversed.indexed) ...[
+            _reveal(
+              context,
+              i,
+              FloatingActionButton.small(
+                heroTag: 'tool-${t.name}',
+                tooltip: _icons[t]!.$2,
+                backgroundColor: c.tool == t
+                    ? scheme.primaryContainer
+                    : scheme.surfaceContainerHigh,
+                foregroundColor: c.tool == t
+                    ? scheme.onPrimaryContainer
+                    : scheme.onSurface,
+                onPressed: () {
+                  widget.feedback.play(FeedbackEvent.select);
+                  c.selectTool(t);
+                },
+                child: Icon(_icons[t]!.$1),
+              ),
+            ),
+            const SizedBox(height: 8),
           ],
+        ],
+        FloatingActionButton(
+          heroTag: 'tool-main',
+          tooltip: _open ? 'Hide tools' : 'Drawing tools',
+          onPressed: _toggle,
+          child: AnimatedSwitcher(
+            duration: 200.ms,
+            transitionBuilder: (w, a) => RotationTransition(
+              turns: Tween(begin: 0.75, end: 1.0).animate(a),
+              child: FadeTransition(opacity: a, child: w),
+            ),
+            child: _open
+                ? const Icon(Icons.close, key: ValueKey('close'))
+                : Stack(
+                    key: const ValueKey('tool'),
+                    alignment: Alignment.center,
+                    children: [
+                      Icon(icon),
+                      Positioned(
+                        right: -2,
+                        bottom: -2,
+                        child: Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: Color(c.color),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: scheme.onPrimaryContainer,
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
         ),
-      ),
+      ],
     );
   }
 }
