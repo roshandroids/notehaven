@@ -1,7 +1,6 @@
 name: CI
+# PRs only: tests. Merging to main deploys via pages.yaml (no second test/build run).
 on:
-  push:
-    branches: [main]
   pull_request:
 
 concurrency:
@@ -18,20 +17,3 @@ jobs:
           flutter-version: 3.44.8
           channel: stable
       - run: FLUTTER=flutter DART=dart scripts/verify.sh
-
-  # Fast cross-check on every PR. Heavy desktop/mobile builds are manual:
-  # see release-builds.yaml.
-  build-web:
-    needs: verify
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: 3.44.8
-          channel: stable
-      - run: flutter pub get
-      - run: dart run build_runner build
-        working-directory: app
-      - run: flutter build web
-        working-directory: app
