@@ -89,7 +89,11 @@ void main() {
     await pumpApp(tester);
     await addNote(tester, 'Plan', 'body');
     // Swipe actions exist in list view only; grid cards use the long-press menu.
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('List view'));
+    await tester.pumpAndSettle();
+    await tester.pageBack();
     await tester.pumpAndSettle();
     await tester.drag(find.text('Plan'), const Offset(-400, 0));
     await tester.pumpAndSettle();
@@ -102,7 +106,11 @@ void main() {
     await pumpApp(tester);
     await addNote(tester, 'Temp', 'x');
     // Swipe actions exist in list view only; grid cards use the long-press menu.
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('List view'));
+    await tester.pumpAndSettle();
+    await tester.pageBack();
     await tester.pumpAndSettle();
     await tester.drag(find.text('Temp'), const Offset(-400, 0));
     await tester.pumpAndSettle();

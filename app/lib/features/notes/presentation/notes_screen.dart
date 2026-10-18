@@ -60,13 +60,6 @@ class NotesScreen extends ConsumerWidget {
             titleSpacing: 16,
             title: const _SearchField(),
             actions: [
-              IconButton(
-                tooltip: grid ? 'List view' : 'Grid view',
-                icon: Icon(
-                  grid ? Icons.view_agenda_outlined : Icons.grid_view_outlined,
-                ),
-                onPressed: ref.read(gridViewProvider.notifier).toggle,
-              ),
               const SyncStatusButton(),
               IconButton(
                 tooltip: 'Settings',

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/app_theme.dart';
 import '../../../shared/feedback/ui_feedback.dart';
+import '../../notes/presentation/note_providers.dart';
 import '../domain/app_settings.dart';
 import 'settings_providers.dart';
 
@@ -52,6 +53,34 @@ class SettingsScreen extends ConsumerWidget {
                     onSelectionChanged: (s) {
                       feedback.play(FeedbackEvent.select);
                       controller.setThemePreference(s.first);
+                    },
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: ListTile(
+                  leading: const Icon(Icons.grid_view_outlined),
+                  title: const Text('Note layout'),
+                  trailing: SegmentedButton<bool>(
+                    showSelectedIcon: false,
+                    segments: const [
+                      ButtonSegment(
+                        value: true,
+                        icon: Icon(Icons.grid_view_outlined),
+                        tooltip: 'Grid view',
+                      ),
+                      ButtonSegment(
+                        value: false,
+                        icon: Icon(Icons.view_agenda_outlined),
+                        tooltip: 'List view',
+                      ),
+                    ],
+                    selected: {ref.watch(gridViewProvider)},
+                    onSelectionChanged: (s) {
+                      feedback.play(FeedbackEvent.select);
+                      if (s.first != ref.read(gridViewProvider)) {
+                        ref.read(gridViewProvider.notifier).toggle();
+                      }
                     },
                   ),
                 ),

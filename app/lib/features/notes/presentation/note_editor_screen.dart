@@ -110,12 +110,15 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
       messenger
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Row(
               children: [
-                Icon(Icons.check_circle_outline),
-                SizedBox(width: 12),
-                Text('Note saved'),
+                Icon(
+                  Icons.check_circle_outline,
+                  color: Theme.of(context).colorScheme.onInverseSurface,
+                ),
+                const SizedBox(width: 12),
+                const Text('Note saved'),
               ],
             ),
             duration: Duration(seconds: 2),

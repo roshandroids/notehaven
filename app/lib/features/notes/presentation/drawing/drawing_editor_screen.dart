@@ -208,123 +208,66 @@ class _DrawingEditorScreenState extends ConsumerState<DrawingEditorScreen> {
               autofocus: true,
               child: Scaffold(
                 backgroundColor: scheme.surfaceContainerLow,
-                body: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // Whole screen is the page: a new drawing takes its shape.
-                    LayoutBuilder(
-                      builder: (context, box) {
-                        if (widget.initial == null || widget.initial!.isEmpty) {
-                          _controller.adoptAspectRatio(
-                            box.maxWidth / box.maxHeight,
-                          );
-                        }
-                        return Center(
-                          child: AspectRatio(
-                            aspectRatio: _controller.aspectRatio,
-                            child: _Canvas(
-                              controller: _controller,
-                              onDown: _pointerDown,
-                              onMove: _pointerMove,
-                              onUp: _pointerUp,
-                            ),
-                          ),
-                        );
-                      },
+                appBar: AppBar(
+                  leading: IconButton(
+                    tooltip: 'Close',
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).maybePop(),
+                  ),
+                  title: const Text('Drawing'),
+                  actions: [
+                    IconButton(
+                      tooltip: 'Undo',
+                      icon: const Icon(Icons.undo),
+                      onPressed: _controller.canUndo ? _undo : null,
                     ),
-                    SafeArea(
-                      child: Align(
-                        alignment: Alignment.topCenter,
-                        child: _TopBar(
-                          controller: _controller,
-                          onClose: () => Navigator.of(context).maybePop(),
-                          onUndo: _undo,
-                          onRedo: _redo,
-                          onClear: _clear,
-                          onSave: _save,
-                        ),
-                      ),
+                    IconButton(
+                      tooltip: 'Redo',
+                      icon: const Icon(Icons.redo),
+                      onPressed: _controller.canRedo ? _redo : null,
                     ),
-                    SafeArea(
-                      child: Align(
-                        alignment: Alignment.bottomRight,
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: _ToolFab(
-                            controller: _controller,
-                            feedback: _feedback,
-                          ),
-                        ),
-                      ),
+                    IconButton(
+                      tooltip: 'Clear drawing',
+                      icon: const Icon(Icons.delete_sweep_outlined),
+                      onPressed: _controller.strokes.isEmpty ? null : _clear,
+                    ),
+                    IconButton(
+                      tooltip: 'Save drawing',
+                      icon: const Icon(Icons.check),
+                      onPressed: _save,
                     ),
                   ],
+                ),
+                floatingActionButton: _ToolFab(
+                  controller: _controller,
+                  feedback: _feedback,
+                ),
+                // The whole body is the page: a new drawing takes its shape.
+                body: LayoutBuilder(
+                  builder: (context, box) {
+                    if (widget.initial == null || widget.initial!.isEmpty) {
+                      _controller.adoptAspectRatio(
+                        box.maxWidth / box.maxHeight,
+                      );
+                    }
+                    return Center(
+                      child: AspectRatio(
+                        aspectRatio: _controller.aspectRatio,
+                        child: _Canvas(
+                          controller: _controller,
+                          onDown: _pointerDown,
+                          onMove: _pointerMove,
+                          onUp: _pointerUp,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
           ),
         );
       },
-    );
-  }
-}
-
-/// Floating pill with close / undo / redo / clear / save over the page.
-class _TopBar extends StatelessWidget {
-  const _TopBar({
-    required this.controller,
-    required this.onClose,
-    required this.onUndo,
-    required this.onRedo,
-    required this.onClear,
-    required this.onSave,
-  });
-
-  final DrawingController controller;
-  final VoidCallback onClose, onUndo, onRedo, onClear, onSave;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.all(8),
-      child: Material(
-        color: scheme.surface.withValues(alpha: 0.92),
-        elevation: 3,
-        shape: const StadiumBorder(),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                tooltip: 'Close',
-                icon: const Icon(Icons.close),
-                onPressed: onClose,
-              ),
-              IconButton(
-                tooltip: 'Undo',
-                icon: const Icon(Icons.undo),
-                onPressed: controller.canUndo ? onUndo : null,
-              ),
-              IconButton(
-                tooltip: 'Redo',
-                icon: const Icon(Icons.redo),
-                onPressed: controller.canRedo ? onRedo : null,
-              ),
-              IconButton(
-                tooltip: 'Clear drawing',
-                icon: const Icon(Icons.delete_sweep_outlined),
-                onPressed: controller.strokes.isEmpty ? null : onClear,
-              ),
-              IconButton(
-                tooltip: 'Save drawing',
-                icon: Icon(Icons.check, color: scheme.primary),
-                onPressed: onSave,
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
