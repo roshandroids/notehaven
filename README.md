@@ -47,7 +47,7 @@ Known issue: in the Claude desktop app's embedded browser the web build renders 
 opened (the worker never requested `sqlite3.wasm`). Not yet tested in Chrome/Safari/Firefox; treat web persistence as unverified.
 
 ## Docs
-[Sync protocol](documentation/sync_protocol.md) · [Rich text & drawings](documentation/adr/0003-rich-text-and-drawings.md) · [Performance](documentation/performance.md) · [Accessibility](documentation/accessibility.md) ·
+[Wiki](wiki/Home.md) · [Sync protocol](documentation/sync_protocol.md) · [Rich text & drawings](documentation/adr/0003-rich-text-and-drawings.md) · [Performance](documentation/performance.md) · [Accessibility](documentation/accessibility.md) ·
 [Architecture](documentation/ARCHITECTURE_DECISION.md) · [Dependency rules](documentation/dependency_rules.md) · [Testing](documentation/testing.md) · [ADRs](documentation/adr/) · [Contributing](CONTRIBUTING.md)
 
 MIT licensed.
