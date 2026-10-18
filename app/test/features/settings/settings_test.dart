@@ -160,6 +160,8 @@ void main() {
     expect(container.read(feedbackPrefsProvider).sounds, isFalse);
     await tester.tap(find.text('Sounds'));
     await tester.tap(find.text('Haptic feedback'));
+    await tester.ensureVisible(find.text('Reduced'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Reduced'));
     await tester.pumpAndSettle();
 

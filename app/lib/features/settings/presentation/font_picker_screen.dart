@@ -69,55 +69,55 @@ class _FontPickerScreenState extends ConsumerState<FontPickerScreen> {
     final preview = _query.trim().isEmpty;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Font')),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: SearchInput(
-                  hintText: 'Search ${_all.length} Google Fonts',
-                  onChanged: (v) => setState(() => _query = v),
+          child: CustomScrollView(
+            slivers: [
+              const SliverAppBar.large(title: Text('Font')),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: SearchInput(
+                    hintText: 'Search ${_all.length} Google Fonts',
+                    onChanged: (v) => setState(() => _query = v),
+                  ),
                 ),
               ),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: results.length + (preview ? 1 : 0),
-                  itemBuilder: (context, i) {
-                    if (preview && i == 0) {
-                      return ListTile(
-                        title: const Text('System default'),
-                        trailing: selected == null
-                            ? const Icon(Icons.check_circle)
-                            : null,
-                        onTap: () {
-                          ref.read(feedbackProvider).play(FeedbackEvent.select);
-                          controller.setFont(null);
-                        },
-                      );
-                    }
-                    final family = results[i - (preview ? 1 : 0)];
+              SliverList.builder(
+                itemCount: results.length + (preview ? 1 : 0),
+                itemBuilder: (context, i) {
+                  if (preview && i == 0) {
                     return ListTile(
-                      key: ValueKey(family),
-                      title: Text(family),
-                      subtitle: preview
-                          ? Text(
-                              'The quick brown fox jumps over the lazy dog',
-                              style: GoogleFonts.getFont(family),
-                            )
-                          : null,
-                      trailing: selected == family
+                      title: const Text('System default'),
+                      trailing: selected == null
                           ? const Icon(Icons.check_circle)
                           : null,
                       onTap: () {
                         ref.read(feedbackProvider).play(FeedbackEvent.select);
-                        controller.setFont(family);
+                        controller.setFont(null);
                       },
                     );
-                  },
-                ),
+                  }
+                  final family = results[i - (preview ? 1 : 0)];
+                  return ListTile(
+                    key: ValueKey(family),
+                    title: Text(family),
+                    subtitle: preview
+                        ? Text(
+                            'The quick brown fox jumps over the lazy dog',
+                            style: GoogleFonts.getFont(family),
+                          )
+                        : null,
+                    trailing: selected == family
+                        ? const Icon(Icons.check_circle)
+                        : null,
+                    onTap: () {
+                      ref.read(feedbackProvider).play(FeedbackEvent.select);
+                      controller.setFont(family);
+                    },
+                  );
+                },
               ),
             ],
           ),

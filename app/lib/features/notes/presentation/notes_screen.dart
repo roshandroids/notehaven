@@ -55,19 +55,6 @@ class NotesScreen extends ConsumerWidget {
       child: Focus(
         autofocus: true,
         child: Scaffold(
-          appBar: AppBar(
-            toolbarHeight: 72,
-            titleSpacing: 16,
-            title: const _SearchField(),
-            actions: [
-              const SyncStatusButton(),
-              IconButton(
-                tooltip: 'Settings',
-                icon: const Icon(Icons.settings_outlined),
-                onPressed: openSettings,
-              ),
-            ],
-          ),
           floatingActionButton: _maybeAnimate(
             context,
             FloatingActionButton.extended(
@@ -81,17 +68,59 @@ class NotesScreen extends ConsumerWidget {
               begin: const Offset(0.6, 0.6),
             ),
           ),
-          body: notes.when(
-            data: (items) => items.isEmpty
-                ? _EmptyState(searching: searching)
-                : _NoteGrid(items: items, selectedId: selectedId, grid: grid),
-            loading: () =>
-                const Center(child: Illustration(IllustrationKind.loading)),
-            error: (e, _) => IllustratedMessage(
-              kind: IllustrationKind.error,
-              title: 'Could not load notes',
-              subtitle: '$e',
-            ),
+          body: CustomScrollView(
+            slivers: [
+              // Floats in on any upward scroll and snaps shut/open.
+              SliverAppBar(
+                floating: true,
+                snap: true,
+                toolbarHeight: 72,
+                titleSpacing: 16,
+                title: const _SearchField(),
+                actions: [
+                  const SyncStatusButton(),
+                  IconButton(
+                    tooltip: 'Settings',
+                    icon: const Icon(Icons.settings_outlined),
+                    onPressed: openSettings,
+                  ),
+                ],
+              ),
+              ...notes.when(
+                data: (items) => items.isEmpty
+                    ? [
+                        SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: _EmptyState(searching: searching),
+                        ),
+                      ]
+                    : [
+                        _NoteGrid(
+                          items: items,
+                          selectedId: selectedId,
+                          grid: grid,
+                        ),
+                      ],
+                loading: () => const [
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
+                      child: Illustration(IllustrationKind.loading),
+                    ),
+                  ),
+                ],
+                error: (e, _) => [
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: IllustratedMessage(
+                      kind: IllustrationKind.error,
+                      title: 'Could not load notes',
+                      subtitle: '$e',
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
@@ -173,35 +202,36 @@ class _NoteGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MasonryGridView.builder(
+    return SliverPadding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
-      gridDelegate: grid
-          ? const SliverSimpleGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 360,
-            )
-          : const SliverSimpleGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 1,
+      sliver: SliverMasonryGrid(
+        gridDelegate: grid
+            ? const SliverSimpleGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 360,
+              )
+            : const SliverSimpleGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 1,
+              ),
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        delegate: SliverChildBuilderDelegate(childCount: items.length, (_, i) {
+          final note = items[i];
+          final card = RepaintBoundary(
+            key: ValueKey(note.id),
+            child: _NoteCard(
+              note: note,
+              selected: note.id == selectedId,
+              grid: grid,
             ),
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      itemCount: items.length,
-      itemBuilder: (_, i) {
-        final note = items[i];
-        final card = RepaintBoundary(
-          key: ValueKey(note.id),
-          child: _NoteCard(
-            note: note,
-            selected: note.id == selectedId,
-            grid: grid,
-          ),
-        );
-        return i < _animatedCount && !reduceMotion(context)
-            ? card
-                  .animate(delay: (30 * i).ms)
-                  .fadeIn(duration: 250.ms)
-                  .slideY(begin: 0.06, end: 0, curve: Curves.easeOut)
-            : card;
-      },
+          );
+          return i < _animatedCount && !reduceMotion(context)
+              ? card
+                    .animate(delay: (30 * i).ms)
+                    .fadeIn(duration: 250.ms)
+                    .slideY(begin: 0.06, end: 0, curve: Curves.easeOut)
+              : card;
+        }),
+      ),
     );
   }
 }

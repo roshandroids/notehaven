@@ -22,31 +22,37 @@ class ColorThemeScreen extends ConsumerWidget {
     final brightness = Theme.of(context).brightness;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Color theme')),
-      body: GridView.builder(
-        padding: const EdgeInsets.all(16),
-        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 180,
-          mainAxisExtent: 92,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
-        ),
-        itemCount: _schemes.length,
-        itemBuilder: (_, i) {
-          final scheme = _schemes[i];
-          return RepaintBoundary(
-            child: _SchemeTile(
-              key: Key('scheme-${scheme.name}'),
-              scheme: scheme,
-              brightness: brightness,
-              selected: settings.schemeName == scheme.name,
-              onTap: () {
-                feedback.play(FeedbackEvent.select);
-                controller.setScheme(scheme.name);
+      body: CustomScrollView(
+        slivers: [
+          const SliverAppBar.large(title: Text('Color theme')),
+          SliverPadding(
+            padding: const EdgeInsets.all(16),
+            sliver: SliverGrid.builder(
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 180,
+                mainAxisExtent: 92,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+              ),
+              itemCount: _schemes.length,
+              itemBuilder: (_, i) {
+                final scheme = _schemes[i];
+                return RepaintBoundary(
+                  child: _SchemeTile(
+                    key: Key('scheme-${scheme.name}'),
+                    scheme: scheme,
+                    brightness: brightness,
+                    selected: settings.schemeName == scheme.name,
+                    onTap: () {
+                      feedback.play(FeedbackEvent.select);
+                      controller.setScheme(scheme.name);
+                    },
+                  ),
+                );
               },
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
