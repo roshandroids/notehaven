@@ -165,6 +165,8 @@ void main() {
       await open(tester);
       await tester.tap(find.byTooltip('Drawing tools'));
       await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Pen')); // active tool again -> options
+      await tester.pumpAndSettle();
       expect(find.bySemanticsLabel(RegExp('Color red')), findsOneWidget);
       expect(find.byTooltip('Pen'), findsOneWidget);
       expect(find.byTooltip('Eraser (removes whole strokes)'), findsOneWidget);

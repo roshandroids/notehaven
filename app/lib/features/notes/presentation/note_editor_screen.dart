@@ -146,6 +146,7 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
     messenger.showSnackBar(
       SnackBar(
         content: const Text('Note deleted'),
+        persist: false,
         action: SnackBarAction(
           label: 'Undo',
           onPressed: () {
@@ -178,7 +179,10 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
           showAlignmentButtons: true,
           showLink: true,
           showSearchButton: wide,
+          // Phone: bigger tap targets in the bottom row.
+          toolbarSize: wide ? null : 52,
           buttonOptions: QuillSimpleToolbarButtonOptions(
+            base: QuillToolbarBaseButtonOptions(iconSize: wide ? null : 26),
             bold: _toggle(Symbols.format_bold_rounded),
             italic: _toggle(Symbols.format_italic_rounded),
             underLine: _toggle(Symbols.format_underlined_rounded),
@@ -199,6 +203,7 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
       },
       child: Scaffold(
         appBar: AppBar(
+          title: Text(widget.note == null ? 'New note' : 'Edit note'),
           actions: [
             if (widget.note != null)
               IconButton(
@@ -249,7 +254,10 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
                       ),
                     ),
                   ),
-                  if (!wide) ...[const Divider(height: 1), toolbar],
+                  if (!wide) ...[
+                    const Divider(height: 1),
+                    SafeArea(top: false, child: toolbar),
+                  ],
                   ListenableBuilder(
                     listenable: _quill,
                     builder: (context, _) {

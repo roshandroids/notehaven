@@ -98,6 +98,7 @@ class _DrawingEditorScreenState extends ConsumerState<DrawingEditorScreen> {
       ..showSnackBar(
         SnackBar(
           content: const Text('Drawing cleared'),
+          persist: false,
           action: SnackBarAction(label: 'Undo', onPressed: _undo),
         ),
       );
@@ -336,6 +337,9 @@ class _ToolFab extends StatefulWidget {
 class _ToolFabState extends State<_ToolFab> {
   bool _open = false;
 
+  /// Color and width popups, shown by tapping the already-active tool.
+  bool _options = false;
+
   static const _icons = {
     DrawingTool.pen: (Icons.edit, 'Pen'),
     DrawingTool.highlighter: (Icons.highlight, 'Highlighter'),
@@ -347,7 +351,10 @@ class _ToolFabState extends State<_ToolFab> {
 
   void _toggle() {
     widget.feedback.play(FeedbackEvent.tap);
-    setState(() => _open = !_open);
+    setState(() {
+      _open = !_open;
+      _options = false;
+    });
   }
 
   Widget _reveal(BuildContext context, int i, Widget child) =>
@@ -368,7 +375,7 @@ class _ToolFabState extends State<_ToolFab> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        if (_open) ...[
+        if (_open && _options) ...[
           _reveal(
             context,
             3,
@@ -421,6 +428,8 @@ class _ToolFabState extends State<_ToolFab> {
             ),
           ),
           const SizedBox(height: 8),
+        ],
+        if (_open) ...[
           for (final (i, t) in DrawingTool.values.reversed.indexed) ...[
             _reveal(
               context,
@@ -436,7 +445,9 @@ class _ToolFabState extends State<_ToolFab> {
                     : scheme.onSurface,
                 onPressed: () {
                   widget.feedback.play(FeedbackEvent.select);
+                  final again = c.tool == t && t != DrawingTool.eraser;
                   c.selectTool(t);
+                  setState(() => _options = again && !_options);
                 },
                 child: Icon(_icons[t]!.$1),
               ),

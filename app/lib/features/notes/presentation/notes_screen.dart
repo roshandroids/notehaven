@@ -276,6 +276,7 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
       ..showSnackBar(
         SnackBar(
           content: Text(failure?.message ?? 'Note deleted'),
+          persist: false,
           action: failure == null
               ? SnackBarAction(
                   label: 'Undo',

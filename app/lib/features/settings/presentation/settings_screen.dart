@@ -26,7 +26,7 @@ class SettingsScreen extends ConsumerWidget {
           constraints: const BoxConstraints(maxWidth: 840),
           child: CustomScrollView(
             slivers: [
-              const SliverAppBar.large(title: Text('Settings')),
+              const SliverAppBar.medium(title: Text('Settings')),
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
