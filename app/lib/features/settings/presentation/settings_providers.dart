@@ -37,6 +37,8 @@ class SettingsController extends Notifier<AppSettings> {
   void setMotion(MotionPreference value) =>
       _update(state.copyWith(motion: value));
 
+  void setTextScale(double value) => _update(state.copyWith(textScale: value));
+
   void _update(AppSettings next) {
     state = next;
     ref.read(settingsRepositoryProvider).save(next);

@@ -20,6 +20,7 @@ class App extends ConsumerWidget {
     final reduceMotionSetting = ref.watch(
       settingsProvider.select((s) => s.motion == MotionPreference.reduced),
     );
+    final textScale = ref.watch(settingsProvider.select((s) => s.textScale));
     return MaterialApp.router(
       title: 'Note Haven',
       theme: themes.light,
@@ -49,12 +50,15 @@ class App extends ConsumerWidget {
             child: child!,
           ),
         );
-        return reduceMotionSetting
-            ? MediaQuery(
-                data: MediaQuery.of(context).copyWith(disableAnimations: true),
-                child: body,
-              )
-            : body;
+        final mq = MediaQuery.of(context);
+        return MediaQuery(
+          data: mq.copyWith(
+            disableAnimations: reduceMotionSetting ? true : null,
+            // Settings size stacks on the OS size.
+            textScaler: TextScaler.linear(mq.textScaler.scale(1) * textScale),
+          ),
+          child: body,
+        );
       },
     );
   }

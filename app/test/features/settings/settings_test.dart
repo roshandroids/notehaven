@@ -104,6 +104,7 @@ void main() {
           hapticsEnabled: false,
           soundsEnabled: true,
           motion: MotionPreference.reduced,
+          textScale: 1.2,
         ),
       );
       final loaded = (await PrefsSettingsRepository.open()).load();
@@ -113,6 +114,7 @@ void main() {
       expect(loaded.hapticsEnabled, isFalse);
       expect(loaded.soundsEnabled, isTrue);
       expect(loaded.motion, MotionPreference.reduced);
+      expect(loaded.textScale, 1.2);
     });
   });
 
@@ -159,9 +161,19 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(container.read(feedbackPrefsProvider).sounds, isFalse);
+    final scroll = find.byType(Scrollable).first;
+    await tester.scrollUntilVisible(
+      find.text('Sounds'),
+      200,
+      scrollable: scroll,
+    );
     await tester.tap(find.text('Sounds'));
     await tester.tap(find.text('Haptic feedback'));
-    await tester.ensureVisible(find.text('Reduced'));
+    await tester.scrollUntilVisible(
+      find.text('Reduced'),
+      200,
+      scrollable: scroll,
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Reduced'));
     await tester.pumpAndSettle();

@@ -13,6 +13,7 @@ class AppSettings {
     this.hapticsEnabled = true,
     this.soundsEnabled = false,
     this.motion = MotionPreference.system,
+    this.textScale = 1.0,
   });
 
   /// `FlexScheme` enum name used until the user picks another.
@@ -34,6 +35,9 @@ class AppSettings {
 
   final MotionPreference motion;
 
+  /// Multiplies the system text size (1.0 = unchanged).
+  final double textScale;
+
   /// Pass `clearFont: true` to go back to the platform default font.
   AppSettings copyWith({
     ThemePreference? themePreference,
@@ -43,6 +47,7 @@ class AppSettings {
     bool? hapticsEnabled,
     bool? soundsEnabled,
     MotionPreference? motion,
+    double? textScale,
   }) => AppSettings(
     themePreference: themePreference ?? this.themePreference,
     schemeName: schemeName ?? this.schemeName,
@@ -50,5 +55,6 @@ class AppSettings {
     hapticsEnabled: hapticsEnabled ?? this.hapticsEnabled,
     soundsEnabled: soundsEnabled ?? this.soundsEnabled,
     motion: motion ?? this.motion,
+    textScale: textScale ?? this.textScale,
   );
 }

@@ -35,6 +35,9 @@ dependencies:
   material_symbols_icons: ^4.2960.0
   path_provider: ^2.1.6
   share_plus: ^13.3.1
+  http: ^1.6.0
+  file_picker: ^13.1.0
+  url_launcher: ^6.3.3
 dev_dependencies:
   # shortcut: drift_dev is capped below 2.34.6 (needs analyzer >=13, but test/flutter_test pin
   # analyzer <13); drift is pinned to the same range. Lift when Flutter's pinned test_api allows it.
