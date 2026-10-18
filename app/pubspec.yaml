@@ -1,0 +1,24 @@
+name: notehaven_app
+description: Notehaven — offline-first site log app (iOS, Android, web, macOS, Windows, Linux).
+publish_to: none
+version: 0.1.0+1
+resolution: workspace
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^3.0.0
+  go_router: ^18.0.0
+  notehaven_core:
+    path: ../packages/notehaven_core
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

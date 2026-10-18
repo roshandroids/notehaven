@@ -1,0 +1,9 @@
+name: notehaven_workspace
+description: Workspace root for Notehaven. Not published.
+publish_to: none
+environment:
+  sdk: ^3.12.2
+workspace:
+  - app
+  - packages/notehaven_core
+  - tool

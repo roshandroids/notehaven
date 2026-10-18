@@ -1,0 +1,9 @@
+.dart_tool/
+build/
+.flutter-plugins*
+.fvm/flutter_sdk
+coverage/
+*.iml
+.idea/
+.DS_Store
+pubspec.lock.bak

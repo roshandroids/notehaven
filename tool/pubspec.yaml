@@ -1,0 +1,11 @@
+name: notehaven_tools
+description: Repo tooling (architecture boundary checker).
+publish_to: none
+resolution: workspace
+environment:
+  sdk: ^3.12.2
+dependencies:
+  path: ^1.9.0
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.0
