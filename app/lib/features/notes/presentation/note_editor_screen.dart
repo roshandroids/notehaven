@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../domain/note.dart';
+import 'drawing/drawing_editor_screen.dart';
+import 'drawing/drawing_embed.dart';
 import 'note_actions.dart';
+import 'note_document.dart';
 import 'note_providers.dart';
 
 /// Id used in the route for a note that does not exist yet.
@@ -51,25 +55,50 @@ class _NoteForm extends ConsumerStatefulWidget {
 
 class _NoteFormState extends ConsumerState<_NoteForm> {
   late final _title = TextEditingController(text: widget.note?.title);
-  late final _body = TextEditingController(text: widget.note?.body);
+  late final _quill = QuillController(
+    document: documentFor(widget.note),
+    selection: const TextSelection.collapsed(offset: 0),
+  );
+  final _editorFocus = FocusNode();
+  final _editorScroll = ScrollController();
 
   @override
   void dispose() {
     _title.dispose();
-    _body.dispose();
+    _quill.dispose();
+    _editorFocus.dispose();
+    _editorScroll.dispose();
     super.dispose();
   }
 
   /// Leaves the editor: back in narrow layouts, to the empty pane in split view.
   void _close() => context.canPop() ? context.pop() : context.go('/');
 
+  /// Opens the sketch pad and inserts the result at the cursor.
+  Future<void> _insertDrawing() async {
+    final drawing = await openDrawingEditor(context);
+    if (!mounted || drawing == null || drawing.isEmpty) return;
+    // Cursor position is read after the await, not before.
+    final index = _quill.selection.baseOffset.clamp(
+      0,
+      _quill.document.length - 1,
+    );
+    _quill.replaceText(index, 0, drawingEmbed(drawing), null);
+  }
+
   void _showMessage(String text) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
 
   Future<void> _save() async {
+    final doc = serializeDocument(_quill.document);
     final failure = await ref
         .read(noteActionsProvider)
-        .save(existing: widget.note, title: _title.text, body: _body.text);
+        .save(
+          existing: widget.note,
+          title: _title.text,
+          body: doc.body,
+          content: doc.content,
+        );
     if (!mounted) return;
     if (failure == null) {
       HapticFeedback.lightImpact();
@@ -120,6 +149,11 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
                 onPressed: _delete,
               ),
             IconButton(
+              tooltip: 'Insert drawing',
+              icon: const Icon(Icons.draw_outlined),
+              onPressed: _insertDrawing,
+            ),
+            IconButton(
               tooltip: 'Save',
               icon: const Icon(Icons.check),
               onPressed: _save,
@@ -144,30 +178,45 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
                     ),
                   ),
                   const Divider(),
+                  QuillSimpleToolbar(
+                    controller: _quill,
+                    config: const QuillSimpleToolbarConfig(
+                      // One scrollable row, so it never wraps on a narrow pane.
+                      multiRowsDisplay: false,
+                      showSearchButton: false,
+                      showSubscript: false,
+                      showSuperscript: false,
+                      showFontFamily: false,
+                      showFontSize: false,
+                      showInlineCode: false,
+                      showClearFormat: false,
+                    ),
+                  ),
+                  const Divider(height: 1),
                   Expanded(
-                    child: TextField(
+                    child: QuillEditor(
                       key: const Key('note-body'),
-                      controller: _body,
-                      maxLines: null,
-                      expands: true,
-                      textAlignVertical: TextAlignVertical.top,
-                      decoration: const InputDecoration(
-                        hintText: 'Write something…',
-                        border: InputBorder.none,
+                      controller: _quill,
+                      focusNode: _editorFocus,
+                      scrollController: _editorScroll,
+                      config: const QuillEditorConfig(
+                        placeholder: 'Write something…',
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        embedBuilders: [DrawingEmbedBuilder()],
                       ),
                     ),
                   ),
-                  ValueListenableBuilder<TextEditingValue>(
-                    valueListenable: _body,
-                    builder: (context, value, _) {
-                      final text = value.text.trim();
+                  ListenableBuilder(
+                    listenable: _quill,
+                    builder: (context, _) {
+                      final text = plainTextOf(_quill.document);
                       final words = text.isEmpty
                           ? 0
                           : text.split(RegExp(r'\s+')).length;
                       return Align(
                         alignment: Alignment.centerRight,
                         child: Text(
-                          '$words words · ${value.text.length} characters',
+                          '$words words · ${text.length} characters',
                           style: theme.textTheme.labelSmall,
                         ),
                       );

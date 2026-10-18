@@ -22,6 +22,7 @@ class DriftLocalSyncStore implements LocalSyncStore {
     createdAt: r.createdAt.toUtc(),
     updatedAt: DateTime.fromMillisecondsSinceEpoch(r.clock, isUtc: true),
     deletedAt: r.deletedAt?.toUtc(),
+    content: r.content,
   );
 
   Future<NoteRow?> _row(String id) => (_db.select(
@@ -36,6 +37,7 @@ class DriftLocalSyncStore implements LocalSyncStore {
           id: Value(remote.id),
           title: Value(remote.title),
           body: Value(remote.body),
+          content: Value(remote.content),
           createdAt: Value(previous?.createdAt ?? remote.createdAt),
           updatedAt: Value(remote.updatedAt),
           deletedAt: Value(remote.deletedAt),

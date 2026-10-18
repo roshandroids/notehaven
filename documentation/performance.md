@@ -17,6 +17,10 @@ What is already done, and how to check it. No benchmark numbers are claimed; mea
 2. Look for frames over the budget (16 ms at 60 Hz, 8 ms at 120 Hz) and for rebuild counts in the widget inspector.
 3. Record before/after numbers in the pull request when you change a list or theme path.
 
+## Rich content
+- Drawings: finished strokes sit in their own `RepaintBoundary` and repaint only when the stroke list changes; only the active stroke repaints on pointer moves. Strokes are simplified (Douglas-Peucker) and capped at 200 KB per drawing.
+- The notes list loads the full `content` column for every note; with many large drawings, select only list columns.
+
 ## Not done yet
 - Pagination for very large note counts (the list loads all matches).
 - Full-text search (`LIKE` scans the table; fine for thousands of notes, not millions).

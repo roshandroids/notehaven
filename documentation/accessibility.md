@@ -8,6 +8,8 @@ Built in and tested (`app/test/features/notes/responsive_accessibility_test.dart
 - Decorative animations are skipped when the OS "reduce motion" setting is on.
 - Color themes are Material 3 schemes from FlexColorScheme; light, dark and system modes are available.
 
+Drawings: the sketch pad has tooltips on every tool, labeled color swatches, and the embedded thumbnail is one labeled, tappable stop ("Drawing. Double tap to edit."). Freehand drawing itself needs touch, pen or mouse and cannot be done by screen reader alone; text notes remain fully usable.
+
 Not yet done / not verified:
 - No manual run with TalkBack, VoiceOver or a desktop screen reader (automated checks only).
 - Contrast of every FlexColorScheme preset is not audited (the contrast guideline is not in the test suite yet).

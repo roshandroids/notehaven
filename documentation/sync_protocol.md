@@ -15,11 +15,13 @@ A note on the wire (`SyncNote`, JSON, ISO-8601 UTC timestamps):
   "body": "milk",
   "createdAt": "2026-01-01T00:00:00.000Z",
   "updatedAt": "2026-01-01T00:05:00.000Z",
-  "deletedAt": null
+  "deletedAt": null,
+  "content": "[{\"insert\":\"milk\\n\"}]"
 }
 ```
 
 - `updatedAt` is the conflict clock (millisecond precision). It must increase on every change, including delete and restore.
+- `content` is **optional** and opaque: the rich-text editor's document (Quill Delta JSON, which may embed drawings), stored as a string. Servers must store it and return it unchanged and must not parse or rewrite it. `body` is always the plain-text version, so a server or client without a rich editor still works. Older clients omit `content`; a missing or `null` value means "plain-text note".
 - `deletedAt` non-null means the note is deleted (a tombstone). Servers keep tombstones so other devices learn about deletes.
 
 ## Endpoints
@@ -36,7 +38,7 @@ Returns changes after `cursor` (omit it for the first pull), oldest first, tombs
 - A note changed again after the cursor appears again in later pages.
 
 ### `PUT {base}/notes/{id}`
-Body: a full note. Creates or replaces the note. **Idempotent**: sending the same note twice changes nothing and must not create a new change entry.
+Body: a full note (including `content` when present). Creates or replaces the note. Servers should accept bodies of at least 512 KB because drawings live inside `content` (the app caps one drawing at 200 KB, but a note may hold several); a `413` is treated as a per-note rejection and the note stays queued. **Idempotent**: sending the same note twice changes nothing and must not create a new change entry.
 
 Response `200`: the version the server now holds. If the server already holds a note with an `updatedAt` greater than or equal to the incoming one, it keeps its own and returns it (newer wins, a tie keeps the server copy).
 

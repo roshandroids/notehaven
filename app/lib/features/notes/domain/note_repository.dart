@@ -11,8 +11,9 @@ abstract interface class NoteRepository {
   /// The note with [id], or null if it does not exist.
   Future<Result<Note?>> get(String id);
 
-  /// Creates a note; fails with [ValidationFailure] if title and body are blank.
-  Future<Result<Note>> create(String title, String body);
+  /// Creates a note; fails with [ValidationFailure] if title, body and
+  /// [content] are all empty.
+  Future<Result<Note>> create(String title, String body, {String? content});
 
   /// Saves changes to [note] and stamps a new `updatedAt`.
   Future<Result<Note>> update(Note note);

@@ -22,6 +22,10 @@ class NotesTable extends Table {
   /// Local write counter; lets sync detect an edit made during a push.
   IntColumn get rev => integer().withDefault(const Constant(0))();
 
+  /// Rich document JSON (Quill delta, may embed drawings); null for plain-text
+  /// notes. [body] stays a plain-text mirror for search and previews.
+  TextColumn get content => text().nullable()();
+
   /// Last-write-wins clock in epoch milliseconds, strictly increasing per
   /// note. [updatedAt] only has second precision, so sync uses this instead.
   IntColumn get clock => integer().withDefault(const Constant(0))();
@@ -80,7 +84,7 @@ class AppDatabase extends _$AppDatabase {
 
   /// Bump with every table change and add a step in [migration].
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -100,6 +104,10 @@ class AppDatabase extends _$AppDatabase {
           'INSERT OR IGNORE INTO outbox (note_id, queued_at, attempts) '
           "SELECT id, CAST(strftime('%s', 'now') AS INTEGER), 0 FROM notes",
         );
+      }
+      if (from < 3) {
+        // v2 -> v3: rich content (existing notes keep their plain body).
+        await m.addColumn(notesTable, notesTable.content);
       }
     },
   );

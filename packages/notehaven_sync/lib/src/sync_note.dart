@@ -11,6 +11,7 @@ class SyncNote {
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
+    this.content,
   });
 
   /// Parses the wire format; throws [FormatException] on a malformed payload.
@@ -24,6 +25,10 @@ class SyncNote {
     DateTime time(String key) => DateTime.parse(text(key)).toUtc();
 
     final deleted = json['deletedAt'];
+    final content = json['content'];
+    if (content != null && content is! String) {
+      throw FormatException('"content" must be a string', json);
+    }
     return SyncNote(
       id: text('id'),
       title: text('title'),
@@ -31,6 +36,7 @@ class SyncNote {
       createdAt: time('createdAt'),
       updatedAt: time('updatedAt'),
       deletedAt: deleted == null ? null : time('deletedAt'),
+      content: content as String?,
     );
   }
 
@@ -45,6 +51,11 @@ class SyncNote {
   /// Non-null for a tombstone (the note was deleted).
   final DateTime? deletedAt;
 
+  /// Rich content (for example an editor's JSON). Opaque to sync: servers must
+  /// store it and return it unchanged. Absent for plain-text notes and for
+  /// clients that predate the field.
+  final String? content;
+
   bool get isDeleted => deletedAt != null;
 
   /// Wire format (ISO-8601 UTC timestamps).
@@ -55,6 +66,7 @@ class SyncNote {
     'createdAt': createdAt.toUtc().toIso8601String(),
     'updatedAt': updatedAt.toUtc().toIso8601String(),
     'deletedAt': deletedAt?.toUtc().toIso8601String(),
+    'content': ?content,
   };
 
   @override
@@ -63,13 +75,20 @@ class SyncNote {
       other.id == id &&
       other.title == title &&
       other.body == body &&
+      other.content == content &&
       other.updatedAt.millisecondsSinceEpoch ==
           updatedAt.millisecondsSinceEpoch &&
       other.isDeleted == isDeleted;
 
   @override
-  int get hashCode =>
-      Object.hash(id, title, body, updatedAt.millisecondsSinceEpoch, isDeleted);
+  int get hashCode => Object.hash(
+    id,
+    title,
+    body,
+    content,
+    updatedAt.millisecondsSinceEpoch,
+    isDeleted,
+  );
 
   @override
   String toString() =>

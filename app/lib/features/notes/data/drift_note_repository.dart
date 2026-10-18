@@ -32,6 +32,7 @@ class DriftNoteRepository implements NoteRepository {
     body: r.body,
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,
+    content: r.content,
   );
 
   Future<Result<T>> _guard<T>(Future<T> Function() op) async {
@@ -66,6 +67,7 @@ class DriftNoteRepository implements NoteRepository {
     required String id,
     required String title,
     required String body,
+    required String? content,
     required DateTime createdAt,
   }) => _db.transaction(() async {
     final now = _now();
@@ -77,6 +79,7 @@ class DriftNoteRepository implements NoteRepository {
             id: Value(id),
             title: Value(title),
             body: Value(body),
+            content: Value(content),
             createdAt: Value(previous?.createdAt ?? createdAt),
             updatedAt: Value(now),
             deletedAt: const Value(null),
@@ -91,6 +94,7 @@ class DriftNoteRepository implements NoteRepository {
       body: body,
       createdAt: previous?.createdAt ?? createdAt,
       updatedAt: now,
+      content: content,
     );
   });
 
@@ -119,15 +123,20 @@ class DriftNoteRepository implements NoteRepository {
   });
 
   @override
-  Future<Result<Note>> create(String title, String body) async {
-    final invalid = Note.validate(title, body);
+  Future<Result<Note>> create(
+    String title,
+    String body, {
+    String? content,
+  }) async {
+    final invalid = Note.validate(title, body, content: content);
     if (invalid != null) return Err(invalid);
-    final draft = Note.create(title, body, now: _now());
+    final draft = Note.create(title, body, content: content, now: _now());
     return _guard(
       () => _upsert(
         id: draft.id,
         title: draft.title,
         body: draft.body,
+        content: draft.content,
         createdAt: draft.createdAt,
       ),
     );
@@ -135,13 +144,14 @@ class DriftNoteRepository implements NoteRepository {
 
   @override
   Future<Result<Note>> update(Note note) async {
-    final invalid = Note.validate(note.title, note.body);
+    final invalid = Note.validate(note.title, note.body, content: note.content);
     if (invalid != null) return Err(invalid);
     return _guard(
       () => _upsert(
         id: note.id,
         title: note.title,
         body: note.body,
+        content: note.content,
         createdAt: note.createdAt,
       ),
     );
@@ -172,6 +182,7 @@ class DriftNoteRepository implements NoteRepository {
         id: note.id,
         title: note.title,
         body: note.body,
+        content: note.content,
         createdAt: note.createdAt,
       ),
     );

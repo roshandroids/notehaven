@@ -6,7 +6,7 @@ Use it as a **GitHub template** for your own apps, or read it to learn a layered
 > Status: Phase 0 — structure, rules and CI are in place; features land phase by phase (see [ROADMAP](documentation/ROADMAP.md)).
 
 ## Features
-- Notes: create, edit, delete with undo, copy, live search, masonry grid, swipe actions, word count.
+- Notes: rich text (flutter_quill), freehand drawings inside notes, delete with undo, copy, live search, masonry grid, swipe actions, word count.
 - Appearance: every FlexColorScheme theme (50+), light/dark/system, any Google Font with live previews.
 - Local SQLite (Drift) with the schema dumped for migrations (`app/drift_schemas/`).
 - Backend-agnostic auto sync (off until you configure a backend): engine, REST reference adapter, soft deletes, outbox ([protocol](documentation/sync_protocol.md)).
@@ -46,7 +46,7 @@ Known issue: in the Claude desktop app's embedded browser the web build renders 
 opened (the worker never requested `sqlite3.wasm`). Not yet tested in Chrome/Safari/Firefox; treat web persistence as unverified.
 
 ## Docs
-[Sync protocol](documentation/sync_protocol.md) · [Performance](documentation/performance.md) · [Accessibility](documentation/accessibility.md) ·
+[Sync protocol](documentation/sync_protocol.md) · [Rich text & drawings](documentation/adr/0003-rich-text-and-drawings.md) · [Performance](documentation/performance.md) · [Accessibility](documentation/accessibility.md) ·
 [Architecture](documentation/ARCHITECTURE_DECISION.md) · [Dependency rules](documentation/dependency_rules.md) · [Testing](documentation/testing.md) · [ADRs](documentation/adr/) · [Contributing](CONTRIBUTING.md)
 
 MIT licensed.

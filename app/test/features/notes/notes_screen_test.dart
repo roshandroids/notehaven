@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:notehaven_app/app/app.dart';
@@ -30,7 +31,17 @@ void main() {
     await tester.tap(find.text('New note'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('note-title')), title);
-    await tester.enterText(find.byKey(const Key('note-body')), body);
+    // QuillEditor is not an EditableText, so write through its controller.
+    final editor = tester.widget<QuillEditor>(
+      find.byKey(const Key('note-body')),
+    );
+    editor.controller.replaceText(
+      0,
+      0,
+      body,
+      TextSelection.collapsed(offset: body.length),
+    );
+    await tester.pump();
     await tester.tap(find.byTooltip('Save'));
     await tester.pumpAndSettle();
   }

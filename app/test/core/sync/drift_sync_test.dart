@@ -4,6 +4,7 @@ import 'package:notehaven_app/core/database/app_database.dart';
 import 'package:notehaven_app/core/sync/drift_local_sync_store.dart';
 import 'package:notehaven_app/features/notes/data/drift_note_repository.dart';
 import 'package:notehaven_app/features/notes/domain/note.dart';
+import 'package:notehaven_core/notehaven_core.dart';
 import 'package:notehaven_sync/fakes.dart';
 import 'package:notehaven_sync/notehaven_sync.dart';
 
@@ -66,6 +67,95 @@ void main() {
       final queued = await old.select(old.outboxTable).get();
       expect(queued.map((q) => q.noteId).toSet(), {'a', 'b'});
       expect(await (old.select(old.syncStateTable)).get(), isEmpty);
+    });
+  });
+
+  group('v2 -> v3 migration', () {
+    test('adds a null content column and keeps existing notes', () async {
+      final old = AppDatabase(
+        NativeDatabase.memory(
+          setup: (raw) {
+            raw.execute(
+              'CREATE TABLE notes (id TEXT NOT NULL PRIMARY KEY, '
+              'title TEXT NOT NULL, body TEXT NOT NULL, '
+              'created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, '
+              'deleted_at INTEGER, rev INTEGER NOT NULL DEFAULT 0, '
+              'clock INTEGER NOT NULL DEFAULT 0)',
+            );
+            raw.execute(
+              'CREATE TABLE outbox (note_id TEXT NOT NULL PRIMARY KEY, '
+              'queued_at INTEGER NOT NULL, attempts INTEGER NOT NULL DEFAULT 0)',
+            );
+            raw.execute(
+              'CREATE TABLE sync_state (key TEXT NOT NULL PRIMARY KEY, '
+              'value TEXT NOT NULL)',
+            );
+            raw.execute(
+              "INSERT INTO notes VALUES ('a','Alpha','one',1700000000,1700000100,NULL,4,1700000100000)",
+            );
+            raw.execute("INSERT INTO outbox VALUES ('a',1700000100,2)");
+            raw.execute('PRAGMA user_version = 2');
+          },
+        ),
+      );
+      addTearDown(old.close);
+
+      final notes = ok<List<Note>>(
+        await DriftNoteRepository(old).watch().first,
+      );
+      expect(notes.single.title, 'Alpha');
+      expect(notes.single.content, isNull);
+      final r = await (old.select(
+        old.notesTable,
+      )..where((t) => t.id.equals('a'))).getSingle();
+      expect(r.rev, 4);
+      expect(r.clock, 1700000100000);
+      final queued = await old.select(old.outboxTable).get();
+      expect(queued.single.attempts, 2, reason: 'queue survives the upgrade');
+    });
+  });
+
+  group('rich content', () {
+    const delta = '[{"insert":"hi\\n"}]';
+
+    test('is stored, returned and kept across update and restore', () async {
+      final n = ok<Note>(await repo.create('A', 'hi', content: delta));
+      expect(n.content, delta);
+      expect(ok<Note?>(await repo.get(n.id))!.content, delta);
+
+      await repo.update(n.copyWith(body: 'hi!'));
+      expect(ok<Note?>(await repo.get(n.id))!.content, delta);
+
+      await repo.delete(n.id);
+      await repo.restore(n);
+      expect(ok<Note?>(await repo.get(n.id))!.content, delta);
+    });
+
+    test('a drawing-only note (empty text, has content) is valid', () async {
+      final n = await repo.create('', '', content: delta);
+      expect(n, isA<Ok<Note>>());
+      expect(await repo.create('', ''), isA<Err<Note>>());
+    });
+
+    test('reaches the sync store and applyPulled writes it back', () async {
+      final n = ok<Note>(await repo.create('A', 'x', content: delta));
+      final pending = (await store.pendingChanges(limit: 5)).single;
+      expect(pending.note.content, delta);
+
+      await store.applyPulled([
+        SyncNote(
+          id: n.id,
+          title: 'A',
+          body: 'x',
+          createdAt: DateTime.utc(2026),
+          updatedAt: DateTime.utc(2030),
+          content: '[{"insert":"remote\\n"}]',
+        ),
+      ], 'c9');
+      expect(
+        ok<Note?>(await repo.get(n.id))!.content,
+        '[{"insert":"remote\\n"}]',
+      );
     });
   });
 

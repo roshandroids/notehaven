@@ -64,6 +64,21 @@ void remoteStoreContract(String name, RemoteNoteStore Function() create) {
       expect(stored.title, 'new');
     });
 
+    test('rich content is stored and returned unchanged', () async {
+      final withContent = SyncNote(
+        id: 'rich',
+        title: 't',
+        body: 'b',
+        createdAt: DateTime.utc(2026, 1, 1),
+        updatedAt: DateTime.utc(2026, 1, 1, 0, 0, 1),
+        content: '[{"insert":"hello\\n"}]',
+      );
+      final stored = await remote.push(withContent);
+      expect(stored.content, withContent.content);
+      final page = await remote.pull();
+      expect(page.items.single.content, withContent.content);
+    });
+
     test('tombstones round-trip', () async {
       await remote.push(note('a', 1, deleted: true));
       final page = await remote.pull();

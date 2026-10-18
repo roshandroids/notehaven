@@ -12,16 +12,23 @@ class NoteActions {
 
   final NoteRepository _repository;
 
-  /// Creates a note, or updates [existing] when given.
+  /// Creates a note, or updates [existing] when given. [body] is the plain-text
+  /// mirror; [content] is the rich document (null for an empty one).
   Future<Failure?> save({
     Note? existing,
     required String title,
     required String body,
+    String? content,
   }) async {
     final result = existing == null
-        ? await _repository.create(title, body)
+        ? await _repository.create(title, body, content: content)
         : await _repository.update(
-            existing.copyWith(title: title.trim(), body: body),
+            existing.copyWith(
+              title: title.trim(),
+              body: body,
+              content: content,
+              clearContent: content == null,
+            ),
           );
     return result.fold<Failure?>((_) => null, (f) => f);
   }
@@ -29,7 +36,11 @@ class NoteActions {
   /// Creates a copy of [note] titled "<title> (copy)".
   Future<Failure?> duplicate(Note note) async {
     final title = note.title.isEmpty ? 'Untitled' : note.title;
-    final result = await _repository.create('$title (copy)', note.body);
+    final result = await _repository.create(
+      '$title (copy)',
+      note.body,
+      content: note.content,
+    );
     return result.fold<Failure?>((_) => null, (f) => f);
   }
 

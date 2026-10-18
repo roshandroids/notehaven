@@ -20,6 +20,28 @@ void main() {
       }
     });
 
+    test('content is optional on the wire and survives a round trip', () {
+      final plain = n(1);
+      expect(plain.toJson().containsKey('content'), isFalse);
+      expect(SyncNote.fromJson(plain.toJson()).content, isNull);
+
+      final rich = SyncNote(
+        id: 'a',
+        title: 't',
+        body: 'b',
+        createdAt: DateTime.utc(2026),
+        updatedAt: DateTime.utc(2026, 1, 1, 0, 0, 1),
+        content: '[{"insert":"x\\n"}]',
+      );
+      expect(SyncNote.fromJson(rich.toJson()).content, rich.content);
+      expect(rich == plain, isFalse, reason: 'content takes part in equality');
+    });
+
+    test('a non-string content is rejected', () {
+      final json = n(1).toJson()..['content'] = 5;
+      expect(() => SyncNote.fromJson(json), throwsFormatException);
+    });
+
     test('malformed payloads throw FormatException', () {
       expect(() => SyncNote.fromJson({'id': 1}), throwsFormatException);
       expect(

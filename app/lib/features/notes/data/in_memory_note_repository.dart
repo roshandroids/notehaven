@@ -49,10 +49,14 @@ class InMemoryNoteRepository implements NoteRepository {
   Future<Result<Note?>> get(String id) async => Ok(_notes[id]);
 
   @override
-  Future<Result<Note>> create(String title, String body) async {
-    final invalid = Note.validate(title, body);
+  Future<Result<Note>> create(
+    String title,
+    String body, {
+    String? content,
+  }) async {
+    final invalid = Note.validate(title, body, content: content);
     if (invalid != null) return Err(invalid);
-    final note = Note.create(title, body);
+    final note = Note.create(title, body, content: content);
     _notes[note.id] = note;
     _notify();
     return Ok(note);
@@ -60,7 +64,7 @@ class InMemoryNoteRepository implements NoteRepository {
 
   @override
   Future<Result<Note>> update(Note note) async {
-    final invalid = Note.validate(note.title, note.body);
+    final invalid = Note.validate(note.title, note.body, content: note.content);
     if (invalid != null) return Err(invalid);
     final updated = note.copyWith(updatedAt: DateTime.now());
     _notes[note.id] = updated;
