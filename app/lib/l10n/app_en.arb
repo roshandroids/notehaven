@@ -1,0 +1,268 @@
+{
+  "@@locale": "en",
+  "appTitle": "Note Haven",
+  "settings": "Settings",
+  "appearance": "Appearance",
+  "feedbackGroup": "Feedback",
+  "dataGroup": "Data",
+  "aboutGroup": "About",
+  "themeSystem": "System",
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "colorTheme": "Color theme",
+  "colorThemeLabel": "{name} color theme",
+  "@colorThemeLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "font": "Font",
+  "systemDefault": "System default",
+  "language": "Language",
+  "textSize": "Text size",
+  "noteLayout": "Note layout",
+  "gridView": "Grid view",
+  "listView": "List view",
+  "hapticFeedback": "Haptic feedback",
+  "hapticSubtitle": "Vibrate on actions (phones and tablets)",
+  "sounds": "Sounds",
+  "soundsSubtitle": "Short tones for save, delete and undo",
+  "customSounds": "Custom sounds",
+  "customSoundsSubtitle": "Use your own audio files",
+  "animations": "Animations",
+  "followSystem": "Follow system",
+  "reduced": "Reduced",
+  "storage": "Storage",
+  "storageUsage": "Notes {notes} · Cache {cache}",
+  "@storageUsage": {
+    "placeholders": {
+      "notes": {
+        "type": "String"
+      },
+      "cache": {
+        "type": "String"
+      }
+    }
+  },
+  "clearCache": "Clear cache",
+  "cacheCleared": "Cache cleared",
+  "deleteAllNotes": "Delete all notes",
+  "deleteAllSubtitle": "Removes every note from this device",
+  "deleteAllTitle": "Delete all notes?",
+  "undoRightAfter": "You can undo right after.",
+  "cancel": "Cancel",
+  "deleteAll": "Delete all",
+  "notesDeleted": "{count, plural, =1{1 note deleted} other{{count} notes deleted}}",
+  "@notesDeleted": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "undo": "Undo",
+  "redo": "Redo",
+  "about": "About",
+  "version": "Version {version}",
+  "@version": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "whatsNew": "What's new",
+  "close": "Close",
+  "noReleases": "No releases published yet",
+  "upToDate": "You are up to date (v{version})",
+  "@upToDate": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "updateCheckFailed": "Could not check for updates. Try again later.",
+  "updateAvailable": "Version {version} is available",
+  "@updateAvailable": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "youHave": "You have v{version}.",
+  "@youHave": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "later": "Later",
+  "download": "Download",
+  "checkForUpdates": "Check for updates",
+  "licenses": "Licenses",
+  "openSourceLicenses": "Open-source licenses",
+  "errorReports": "Error reports",
+  "noErrorsRecorded": "No errors recorded",
+  "errorsRecorded": "{count} recorded on this device",
+  "@errorsRecorded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clear": "Clear",
+  "share": "Share",
+  "errorReportSubject": "Note Haven error report",
+  "soundSaved": "Saved",
+  "soundDeleted": "Deleted",
+  "soundError": "Error",
+  "defaultTone": "Default tone",
+  "playSound": "Play {name} sound",
+  "@playSound": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chooseSound": "Choose {name} sound",
+  "@chooseSound": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "resetSound": "Reset {name} sound",
+  "@resetSound": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "done": "Done",
+  "searchFonts": "Search fonts",
+  "searchGoogleFonts": "Search {count} Google Fonts",
+  "@searchGoogleFonts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "fontPreview": "The quick brown fox jumps over the lazy dog",
+  "clearSearch": "Clear search",
+  "newNote": "New note",
+  "editNote": "Edit note",
+  "searchNotes": "Search notes",
+  "couldNotLoadNotes": "Could not load notes",
+  "couldNotLoadNote": "Could not load note: {error}",
+  "@couldNotLoadNote": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "noteNotFound": "Note not found",
+  "noMatchingNotes": "No matching notes",
+  "welcome": "Welcome to Note Haven",
+  "notesAppearHere": "Notes you add appear here",
+  "selectNote": "Select a note",
+  "selectNoteHint": "or press Ctrl/Cmd+N to write a new one.",
+  "noteDeleted": "Note deleted",
+  "noteCopied": "Note copied",
+  "noteSaved": "Note saved",
+  "untitled": "Untitled",
+  "copyTitle": "{title} (copy)",
+  "@copyTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "open": "Open",
+  "copyNote": "Copy note",
+  "copy": "Copy",
+  "exportAsText": "Export as text",
+  "deleteNote": "Delete note",
+  "delete": "Delete",
+  "save": "Save",
+  "edited": "Edited {date}",
+  "@edited": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsTooltip": "Settings",
+  "insertDrawing": "Insert drawing",
+  "hideFormatting": "Hide formatting",
+  "formatting": "Formatting",
+  "titleHint": "Title",
+  "bodyHint": "Write something…",
+  "wordCount": "{words, plural, =1{1 word} other{{words} words}} · {chars, plural, =1{1 character} other{{chars} characters}}",
+  "@wordCount": {
+    "placeholders": {
+      "words": {
+        "type": "int"
+      },
+      "chars": {
+        "type": "int"
+      }
+    }
+  },
+  "syncing": "Syncing…",
+  "syncFailed": "Sync failed, will retry. Tap to retry now.",
+  "tapToSync": "Tap to sync now",
+  "syncedAt": "Synced {time}. Tap to sync now.",
+  "@syncedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "drawing": "Drawing",
+  "drawingTooLarge": "This drawing is too large to save. Erase or simplify some strokes.",
+  "drawingCleared": "Drawing cleared",
+  "discardChanges": "Discard changes?",
+  "keepDrawing": "Keep drawing",
+  "discard": "Discard",
+  "clearDrawing": "Clear drawing",
+  "saveDrawing": "Save drawing",
+  "drawingCanvas": "Drawing canvas. Freehand drawing needs a touch screen, pen or mouse.",
+  "toolPen": "Pen",
+  "toolHighlighter": "Highlighter",
+  "toolEraser": "Eraser (removes whole strokes)",
+  "penWidth": "Pen width",
+  "hideTools": "Hide tools",
+  "drawingTools": "Drawing tools",
+  "colorName": "Color {name}",
+  "@colorName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "colorBlack": "black",
+  "colorRed": "red",
+  "colorBlue": "blue",
+  "colorGreen": "green",
+  "colorOrange": "orange",
+  "colorPurple": "purple",
+  "colorCustom": "custom",
+  "drawingUnavailableLabel": "Drawing that cannot be shown (unsupported or damaged format)",
+  "drawingUnavailable": "Drawing can't be shown",
+  "drawingDoubleTap": "Drawing. Double tap to edit."
+}

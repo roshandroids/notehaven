@@ -1,5 +1,6 @@
 import 'package:audioplayers/audioplayers.dart';
 
+import 'custom_sounds.dart';
 import 'tones.dart';
 import 'ui_feedback.dart';
 
@@ -27,13 +28,15 @@ class AudioPlayersSoundPlayer implements SoundPlayer {
   AudioPlayer? _player;
 
   @override
-  void play(FeedbackEvent event) {
+  Future<void> play(FeedbackEvent event) async {
     final wav = toneWav(event);
     if (wav == null) return;
     final player = _player ??= AudioPlayer()..setReleaseMode(ReleaseMode.stop);
-    player
-        .play(BytesSource(wav, mimeType: 'audio/wav'))
-        .catchError((Object _) {});
+    final custom = await customSoundFor(event);
+    final source = custom == null
+        ? BytesSource(wav, mimeType: 'audio/wav')
+        : DeviceFileSource(custom.path);
+    await player.play(source).catchError((Object _) {});
   }
 
   @override

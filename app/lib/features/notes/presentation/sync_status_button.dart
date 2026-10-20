@@ -6,6 +6,7 @@ import 'package:notehaven_sync/notehaven_sync.dart';
 
 import '../../../core/sync/sync_providers.dart';
 import '../../../shared/layout/layout.dart';
+import '../../../l10n/l10n.dart';
 
 /// App-bar sync indicator; hidden when no backend is configured. Tap to sync
 /// now (the tooltip is also the screen-reader label).
@@ -17,22 +18,22 @@ class SyncStatusButton extends ConsumerWidget {
     final scheduler = ref.watch(syncSchedulerProvider);
     if (scheduler == null) return const SizedBox.shrink();
     final status = ref.watch(syncStatusProvider).value ?? scheduler.status;
+    final l10n = context.l10n;
     final (icon, tooltip) = switch (status.state) {
-      SyncState.syncing => (Icons.sync, 'Syncing…'),
-      SyncState.failed => (
-        Icons.sync_problem,
-        'Sync failed, will retry. Tap to retry now.',
-      ),
+      SyncState.syncing => (Icons.sync, l10n.syncing),
+      SyncState.failed => (Icons.sync_problem, l10n.syncFailed),
       SyncState.idle => (
         Icons.cloud_done_outlined,
         status.lastSyncedAt == null
-            ? 'Tap to sync now'
-            : 'Synced ${DateFormat.jm().format(status.lastSyncedAt!)}. Tap to sync now.',
+            ? l10n.tapToSync
+            : l10n.syncedAt(
+                DateFormat.jm(l10n.localeName).format(status.lastSyncedAt!),
+              ),
       ),
     };
     final syncing = status.state == SyncState.syncing;
     final glyph = Icon(icon, key: ValueKey(status.state));
-    return IconButton(
+    return IconButton.outlined(
       tooltip: tooltip,
       // Spin while syncing; cross-fade between states. State is also in the
       // tooltip, so nothing depends on the motion.

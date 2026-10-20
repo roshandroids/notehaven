@@ -1,11 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/app_settings.dart';
+import '../domain/notes_maintenance.dart';
 import '../domain/settings_repository.dart';
 
 /// Bound in `app/bootstrap.dart` (or test overrides).
 final settingsRepositoryProvider = Provider<SettingsRepository>(
   (ref) => throw UnimplementedError('Override settingsRepositoryProvider'),
+);
+
+/// Bulk note operations used by the "Delete all notes" tile; bound in
+/// `app/bootstrap.dart` so Settings never imports the notes feature.
+final notesMaintenanceProvider = Provider<NotesMaintenance>(
+  (ref) => throw UnimplementedError('Override notesMaintenanceProvider'),
 );
 
 /// Current appearance settings; every setter updates the UI immediately and
@@ -36,6 +43,15 @@ class SettingsController extends Notifier<AppSettings> {
 
   void setMotion(MotionPreference value) =>
       _update(state.copyWith(motion: value));
+
+  void setTextScale(double value) => _update(state.copyWith(textScale: value));
+
+  /// Pass null to follow the system language.
+  void setLocale(String? code) => _update(
+    code == null
+        ? state.copyWith(clearLocale: true)
+        : state.copyWith(localeCode: code),
+  );
 
   void _update(AppSettings next) {
     state = next;

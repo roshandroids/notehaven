@@ -1,10 +1,13 @@
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../features/settings/domain/app_settings.dart';
 import '../../features/settings/presentation/settings_providers.dart';
+import '../../shared/theme/schemes.dart';
+import '../../shared/theme/tokens.dart';
 
 /// Light and dark [ThemeData] for one [AppSettings] value.
 class AppThemes {
@@ -12,15 +15,6 @@ class AppThemes {
 
   final ThemeData light;
   final ThemeData dark;
-}
-
-/// Maps a stored scheme name to a [FlexScheme]; unknown names fall back to
-/// the default so a stale preference never crashes the app.
-FlexScheme flexSchemeFor(String name) {
-  final scheme = FlexScheme.values.asNameMap()[name];
-  return scheme == null || scheme == FlexScheme.custom
-      ? FlexScheme.indigo
-      : scheme;
 }
 
 /// Builds both themes from [settings]. Fonts that are not Google Fonts fall
@@ -32,19 +26,26 @@ AppThemes buildThemes(AppSettings settings) {
 
   // Keep-style minimal chrome: flat bars, outlined cards, no tint or shadow.
   ThemeData minimal(ThemeData base) => base.copyWith(
-    appBarTheme: const AppBarTheme(
-      scrolledUnderElevation: 0,
+    appBarTheme: AppBarTheme(
+      // AppBar's own overlay style would otherwise win over the app-wide one.
+      systemOverlayStyle: base.brightness == Brightness.dark
+          ? SystemUiOverlayStyle.light
+          : SystemUiOverlayStyle.dark,
+      scrolledUnderElevation: 1,
+      shadowColor: base.colorScheme.outlineVariant,
       surfaceTintColor: Colors.transparent,
-      backgroundColor: Colors.transparent,
+      // Solid, so content scrolled under the bar does not show through.
+      backgroundColor: base.scaffoldBackgroundColor,
     ),
     cardTheme: CardThemeData(
       elevation: 0,
       color: Colors.transparent,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         side: BorderSide(color: base.colorScheme.outlineVariant),
       ),
     ),
+    snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating),
     dividerTheme: const DividerThemeData(space: 1, thickness: 0.5),
   );
 
@@ -61,8 +62,32 @@ AppThemes buildThemes(AppSettings settings) {
   );
 
   return AppThemes(
-    light: withFont(FlexThemeData.light(scheme: scheme, useMaterial3: true)),
-    dark: withFont(FlexThemeData.dark(scheme: scheme, useMaterial3: true)),
+    light: withFont(
+      FlexThemeData.light(
+        scheme: scheme,
+        useMaterial3: true,
+        surfaceMode: FlexSurfaceMode.highScaffoldLowSurface,
+        blendLevel: 8,
+        subThemesData: const FlexSubThemesData(
+          defaultRadius: AppRadius.card,
+          inputDecoratorBorderType: FlexInputBorderType.outline,
+          fabUseShape: true,
+        ),
+      ),
+    ),
+    dark: withFont(
+      FlexThemeData.dark(
+        scheme: scheme,
+        useMaterial3: true,
+        surfaceMode: FlexSurfaceMode.highScaffoldLowSurface,
+        blendLevel: 12,
+        subThemesData: const FlexSubThemesData(
+          defaultRadius: AppRadius.card,
+          inputDecoratorBorderType: FlexInputBorderType.outline,
+          fabUseShape: true,
+        ),
+      ),
+    ),
   );
 }
 

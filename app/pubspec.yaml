@@ -31,7 +31,13 @@ dependencies:
   shared_preferences: ^2.5.6
   uuid: ^4.6.0
   audioplayers: ^6.8.1
-
+  flutter_svg: ^2.3.0
+  material_symbols_icons: ^4.2960.0
+  path_provider: ^2.1.6
+  share_plus: ^13.3.1
+  http: ^1.6.0
+  file_picker: ^13.1.0
+  url_launcher: ^6.3.3
 dev_dependencies:
   # shortcut: drift_dev is capped below 2.34.6 (needs analyzer >=13, but test/flutter_test pin
   # analyzer <13); drift is pinned to the same range. Lift when Flutter's pinned test_api allows it.
@@ -40,9 +46,45 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   drift_dev: 2.34.0
   build_runner: ^2.5.0
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.6
   shared_preferences_platform_interface: ^2.4.2
 
 flutter:
+  generate: true
   uses-material-design: true
   assets:
     - assets/CHANGELOG.md
+    - assets/illustrations/
+
+# Regenerate with: dart run flutter_launcher_icons && dart run flutter_native_splash:create
+flutter_launcher_icons:
+  image_path: assets/brand/icon.png
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  adaptive_icon_background: "#3F51B5"
+  adaptive_icon_foreground: assets/brand/icon_foreground.png
+  adaptive_icon_monochrome: assets/brand/icon_monochrome.png
+  web:
+    generate: true
+    image_path: assets/brand/icon.png
+    background_color: "#3F51B5"
+    theme_color: "#3F51B5"
+  windows:
+    generate: true
+    image_path: assets/brand/icon.png
+    icon_size: 256
+  macos:
+    generate: true
+    image_path: assets/brand/icon.png
+
+flutter_native_splash:
+  color: "#FFF8E8"
+  color_dark: "#101B35"
+  image: assets/brand/splash.png
+  android_12:
+    color: "#FFF8E8"
+    color_dark: "#101B35"
+    image: assets/brand/splash.png
+  web: false

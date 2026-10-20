@@ -10,11 +10,20 @@ enum DrawingTool { pen, highlighter, eraser }
 /// so a snapshot is just a list of references).
 class DrawingController extends ChangeNotifier {
   DrawingController([Drawing initial = Drawing.empty])
-    : aspectRatio = initial.aspectRatio,
+    : _aspectRatio = initial.aspectRatio,
       _history = [List.unmodifiable(initial.strokes)];
 
-  /// Canvas width / height; fixed for the life of the drawing.
-  final double aspectRatio;
+  double _aspectRatio;
+
+  /// Canvas width / height; fixed once the first stroke is drawn.
+  double get aspectRatio => _aspectRatio;
+
+  /// Lets a brand-new drawing take the shape of the screen. Ignored once any
+  /// stroke exists, because stored points are relative to the ratio.
+  void adoptAspectRatio(double ratio) {
+    if (_history.length > 1 || strokes.isNotEmpty) return;
+    _aspectRatio = ratio.clamp(0.5, 2.2);
+  }
 
   /// Most undo steps kept.
   static const maxHistory = 100;
@@ -47,9 +56,17 @@ class DrawingController extends ChangeNotifier {
   double get width => _width;
 
   void selectTool(DrawingTool value) {
+    if (value != DrawingTool.eraser) _lastDrawTool = value;
     _tool = value;
     notifyListeners();
   }
+
+  DrawingTool _lastDrawTool = DrawingTool.pen;
+
+  /// Apple Pencil tap / squeeze: flips between the eraser and the last pen.
+  void toggleEraser() => selectTool(
+    _tool == DrawingTool.eraser ? _lastDrawTool : DrawingTool.eraser,
+  );
 
   /// Picks a pen color; leaves the eraser for the pen.
   void selectColor(int argb) {

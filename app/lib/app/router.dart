@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/notes/presentation/note_editor_screen.dart';
 import '../features/notes/presentation/notes_screen.dart';
+import '../features/settings/presentation/color_theme_screen.dart';
 import '../features/settings/presentation/font_picker_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../shared/layout/layout.dart';
@@ -59,6 +60,11 @@ final routerProvider = Provider<GoRouter>(
             path: 'font',
             pageBuilder: (context, state) =>
                 _page(state, const FontPickerScreen()),
+          ),
+          GoRoute(
+            path: 'color',
+            pageBuilder: (context, state) =>
+                _page(state, const ColorThemeScreen()),
           ),
         ],
       ),

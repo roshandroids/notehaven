@@ -5,6 +5,7 @@ import '../../../../shared/layout/layout.dart';
 import '../../domain/drawing.dart';
 import 'drawing_editor_screen.dart';
 import 'drawing_painter.dart';
+import '../../../../l10n/l10n.dart';
 
 /// Embed type stored in the note's Quill document for a drawing.
 const drawingEmbedType = 'drawing';
@@ -33,11 +34,11 @@ class DrawingEmbedBuilder extends EmbedBuilder {
     final drawing = Drawing.tryParse(embedContext.node.value.data as String);
     if (drawing == null) {
       return Semantics(
-        label: 'Drawing that cannot be shown (unsupported or damaged format)',
-        child: const Card(
+        label: context.l10n.drawingUnavailableLabel,
+        child: Card(
           child: ListTile(
-            leading: Icon(Icons.broken_image_outlined),
-            title: Text('Drawing can\'t be shown'),
+            leading: const Icon(Icons.broken_image_outlined),
+            title: Text(context.l10n.drawingUnavailable),
           ),
         ),
       );
@@ -47,8 +48,8 @@ class DrawingEmbedBuilder extends EmbedBuilder {
       child: Semantics(
         button: true,
         label: embedContext.readOnly
-            ? 'Drawing'
-            : 'Drawing. Double tap to edit.',
+            ? context.l10n.drawing
+            : context.l10n.drawingDoubleTap,
         excludeSemantics: true,
         onTap: embedContext.readOnly
             ? null

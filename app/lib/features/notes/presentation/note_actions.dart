@@ -33,11 +33,10 @@ class NoteActions {
     return result.fold<Failure?>((_) => null, (f) => f);
   }
 
-  /// Creates a copy of [note] titled "<title> (copy)".
-  Future<Failure?> duplicate(Note note) async {
-    final title = note.title.isEmpty ? 'Untitled' : note.title;
+  /// Creates a copy of [note] with the already-localized [title].
+  Future<Failure?> duplicate(Note note, String title) async {
     final result = await _repository.create(
-      '$title (copy)',
+      title,
       note.body,
       content: note.content,
     );
@@ -47,6 +46,18 @@ class NoteActions {
   /// Deletes the note with [id].
   Future<Failure?> delete(String id) async =>
       (await _repository.delete(id)).fold<Failure?>((_) => null, (f) => f);
+
+  /// Deletes every note (soft delete, so it syncs) and returns them for undo.
+  Future<List<Note>> deleteAll() async {
+    final notes = (await _repository.watch().first).fold(
+      (list) => list,
+      (_) => <Note>[],
+    );
+    for (final n in notes) {
+      await _repository.delete(n.id);
+    }
+    return notes;
+  }
 
   /// Puts a deleted [note] back unchanged.
   Future<Failure?> restore(Note note) async =>

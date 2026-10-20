@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +12,7 @@ import 'drawing/drawing_embed.dart';
 import 'note_actions.dart';
 import 'note_document.dart';
 import 'note_providers.dart';
+import '../../../l10n/l10n.dart';
 
 /// Id used in the route for a note that does not exist yet.
 const newNoteId = 'new';
@@ -30,7 +32,7 @@ class NoteEditorScreen extends ConsumerWidget {
           data: (note) => note == null
               ? Scaffold(
                   appBar: AppBar(),
-                  body: const Center(child: Text('Note not found')),
+                  body: Center(child: Text(context.l10n.noteNotFound)),
                 )
               : _NoteForm(note: note),
           loading: () => Scaffold(
@@ -39,7 +41,7 @@ class NoteEditorScreen extends ConsumerWidget {
           ),
           error: (e, _) => Scaffold(
             appBar: AppBar(),
-            body: Center(child: Text('Could not load note: $e')),
+            body: Center(child: Text(context.l10n.couldNotLoadNote('$e'))),
           ),
         );
   }
@@ -62,6 +64,9 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
   );
   final _editorFocus = FocusNode();
   final _editorScroll = ScrollController();
+
+  /// Phone only: the formatting toolbar expands from the FAB.
+  bool _formatOpen = false;
 
   @override
   void dispose() {
@@ -93,6 +98,7 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
   Future<void> _save() async {
     final feedback = ref.read(feedbackProvider);
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     final doc = serializeDocument(_quill.document);
     final failure = await ref
         .read(noteActionsProvider)
@@ -109,15 +115,18 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
       messenger
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Row(
               children: [
-                Icon(Icons.check_circle_outline),
-                SizedBox(width: 12),
-                Text('Note saved'),
+                Icon(
+                  Icons.check_circle_outline,
+                  color: Theme.of(context).colorScheme.onInverseSurface,
+                ),
+                const SizedBox(width: 12),
+                Text(l10n.noteSaved),
               ],
             ),
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
     } else {
@@ -131,6 +140,7 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
     final actions = ref.read(noteActionsProvider);
     final feedback = ref.read(feedbackProvider)..play(FeedbackEvent.delete);
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     final failure = await actions.delete(note.id);
     if (!mounted) return;
     if (failure != null) {
@@ -141,9 +151,10 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
     _close();
     messenger.showSnackBar(
       SnackBar(
-        content: const Text('Note deleted'),
+        content: Text(l10n.noteDeleted),
+        persist: false,
         action: SnackBarAction(
-          label: 'Undo',
+          label: l10n.undo,
           onPressed: () {
             feedback.play(FeedbackEvent.undo);
             actions.restore(note);
@@ -153,9 +164,89 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
     );
   }
 
+  /// Toolbar card that grows out of the bottom-right FAB.
+  Widget _formatFab(Widget toolbar) {
+    final scheme = Theme.of(context).colorScheme;
+    final motion = MediaQuery.disableAnimationsOf(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        AnimatedSwitcher(
+          duration: motion ? Duration.zero : const Duration(milliseconds: 220),
+          switchInCurve: Curves.easeOutBack,
+          transitionBuilder: (w, a) => ScaleTransition(
+            alignment: Alignment.bottomRight,
+            scale: a,
+            child: FadeTransition(opacity: a, child: w),
+          ),
+          child: _formatOpen
+              ? Padding(
+                  key: const ValueKey('format-bar'),
+                  padding: const EdgeInsets.only(bottom: 12, left: 16),
+                  child: Card(
+                    elevation: 3,
+                    color: scheme.surfaceContainerHigh,
+                    child: SizedBox(
+                      width: MediaQuery.sizeOf(context).width - 32,
+                      child: toolbar,
+                    ),
+                  ),
+                )
+              : const SizedBox.shrink(key: ValueKey('format-closed')),
+        ),
+        FloatingActionButton(
+          heroTag: 'format-fab',
+          tooltip: _formatOpen
+              ? context.l10n.hideFormatting
+              : context.l10n.formatting,
+          onPressed: () => setState(() => _formatOpen = !_formatOpen),
+          child: Icon(
+            _formatOpen ? Symbols.close_rounded : Symbols.text_format_rounded,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final wide = MediaQuery.sizeOf(context).width >= 600;
+    final toolbar = Material(
+      color: wide ? theme.colorScheme.surfaceContainerHigh : Colors.transparent,
+      borderRadius: BorderRadius.circular(wide ? 12 : 0),
+      child: QuillSimpleToolbar(
+        controller: _quill,
+        config: QuillSimpleToolbarConfig(
+          // Wide: Word-style ribbon wrapping onto rows. Phone: one slim row.
+          multiRowsDisplay: wide,
+          showSubscript: wide,
+          showSuperscript: wide,
+          showFontFamily: wide,
+          showFontSize: wide,
+          showInlineCode: false,
+          showClearFormat: true,
+          showAlignmentButtons: true,
+          showLink: true,
+          showSearchButton: wide,
+          // Phone: bigger tap targets in the bottom row.
+          toolbarSize: wide ? null : 52,
+          buttonOptions: QuillSimpleToolbarButtonOptions(
+            base: QuillToolbarBaseButtonOptions(iconSize: wide ? null : 26),
+            bold: _toggle(Symbols.format_bold_rounded),
+            italic: _toggle(Symbols.format_italic_rounded),
+            underLine: _toggle(Symbols.format_underlined_rounded),
+            strikeThrough: _toggle(Symbols.format_strikethrough_rounded),
+            subscript: _toggle(Symbols.subscript_rounded),
+            superscript: _toggle(Symbols.superscript_rounded),
+            listBullets: _toggle(Symbols.format_list_bulleted_rounded),
+            listNumbers: _toggle(Symbols.format_list_numbered_rounded),
+            quote: _toggle(Symbols.format_quote_rounded),
+          ),
+        ),
+      ),
+    );
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.keyS, meta: true): _save,
@@ -163,28 +254,37 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
       },
       child: Scaffold(
         appBar: AppBar(
+          title: Text(
+            widget.note == null ? context.l10n.newNote : context.l10n.editNote,
+          ),
           actions: [
-            if (widget.note != null)
-              IconButton(
-                tooltip: 'Delete',
-                icon: const Icon(Icons.delete_outline),
+            if (widget.note != null) ...[
+              IconButton.outlined(
+                tooltip: context.l10n.delete,
+                icon: const Icon(Symbols.delete_rounded),
                 onPressed: _delete,
               ),
-            IconButton(
-              tooltip: 'Insert drawing',
-              icon: const Icon(Icons.draw_outlined),
+              const SizedBox(width: 8),
+            ],
+            const SizedBox(width: 8),
+            IconButton.outlined(
+              tooltip: context.l10n.insertDrawing,
+              icon: const Icon(Symbols.draw_rounded),
               onPressed: _insertDrawing,
             ),
-            IconButton(
-              tooltip: 'Save',
-              icon: const Icon(Icons.check),
+            const SizedBox(width: 8),
+            IconButton.filled(
+              tooltip: context.l10n.save,
+              icon: const Icon(Symbols.check_rounded),
               onPressed: _save,
             ),
+            const SizedBox(width: 12),
           ],
         ),
+        floatingActionButton: wide ? null : _formatFab(toolbar),
         body: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720),
+            constraints: const BoxConstraints(maxWidth: 860),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -194,39 +294,33 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
                     controller: _title,
                     textInputAction: TextInputAction.next,
                     style: theme.textTheme.headlineSmall,
-                    decoration: const InputDecoration(
-                      hintText: 'Title',
+                    decoration: InputDecoration(
+                      hintText: context.l10n.titleHint,
                       border: InputBorder.none,
                     ),
                   ),
-                  QuillSimpleToolbar(
-                    controller: _quill,
-                    config: const QuillSimpleToolbarConfig(
-                      // One scrollable row, so it never wraps on a narrow pane.
-                      multiRowsDisplay: false,
-                      showSearchButton: false,
-                      showSubscript: false,
-                      showSuperscript: false,
-                      showFontFamily: false,
-                      showFontSize: false,
-                      showInlineCode: false,
-                      showClearFormat: false,
-                    ),
-                  ),
-                  const Divider(height: 1),
+                  if (wide) ...[toolbar, const Divider(height: 1)],
                   Expanded(
                     child: QuillEditor(
                       key: const Key('note-body'),
                       controller: _quill,
                       focusNode: _editorFocus,
                       scrollController: _editorScroll,
-                      config: const QuillEditorConfig(
-                        placeholder: 'Write something…',
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        embedBuilders: [DrawingEmbedBuilder()],
+                      config: QuillEditorConfig(
+                        placeholder: context.l10n.bodyHint,
+                        // Room for the formatting FAB on phones.
+                        padding: EdgeInsets.only(
+                          top: 12,
+                          bottom: wide ? 12 : 88,
+                        ),
+                        embedBuilders: const [DrawingEmbedBuilder()],
                       ),
                     ),
                   ),
+                  if (!wide) ...[
+                    const Divider(height: 1),
+                    SafeArea(top: false, child: toolbar),
+                  ],
                   ListenableBuilder(
                     listenable: _quill,
                     builder: (context, _) {
@@ -237,7 +331,7 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
                       return Align(
                         alignment: Alignment.centerRight,
                         child: Text(
-                          '$words words · ${text.length} characters',
+                          context.l10n.wordCount(words, text.length),
                           style: theme.textTheme.labelSmall,
                         ),
                       );
@@ -252,3 +346,6 @@ class _NoteFormState extends ConsumerState<_NoteForm> {
     );
   }
 }
+
+QuillToolbarToggleStyleButtonOptions _toggle(IconData icon) =>
+    QuillToolbarToggleStyleButtonOptions(iconData: icon);

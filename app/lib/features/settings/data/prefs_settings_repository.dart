@@ -23,6 +23,8 @@ class PrefsSettingsRepository implements SettingsRepository {
   static const _hapticsKey = 'haptics_enabled';
   static const _soundsKey = 'sounds_enabled';
   static const _motionKey = 'motion_preference';
+  static const _textScaleKey = 'text_scale';
+  static const _localeKey = 'locale_code';
 
   final SharedPreferencesWithCache _prefs;
 
@@ -39,6 +41,8 @@ class PrefsSettingsRepository implements SettingsRepository {
       motion:
           MotionPreference.values.asNameMap()[_prefs.getString(_motionKey)] ??
           MotionPreference.system,
+      textScale: _prefs.getDouble(_textScaleKey) ?? 1.0,
+      localeCode: _prefs.getString(_localeKey),
     );
   }
 
@@ -50,11 +54,18 @@ class PrefsSettingsRepository implements SettingsRepository {
       await _prefs.setBool(_hapticsKey, s.hapticsEnabled);
       await _prefs.setBool(_soundsKey, s.soundsEnabled);
       await _prefs.setString(_motionKey, s.motion.name);
+      await _prefs.setDouble(_textScaleKey, s.textScale);
       final font = s.fontFamily;
       if (font == null) {
         await _prefs.remove(_fontKey);
       } else {
         await _prefs.setString(_fontKey, font);
+      }
+      final locale = s.localeCode;
+      if (locale == null) {
+        await _prefs.remove(_localeKey);
+      } else {
+        await _prefs.setString(_localeKey, locale);
       }
       return const Ok(null);
     } on Object catch (e) {

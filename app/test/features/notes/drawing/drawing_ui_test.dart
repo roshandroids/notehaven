@@ -16,6 +16,7 @@ import 'package:notehaven_app/features/settings/presentation/settings_providers.
 import 'package:notehaven_app/shared/feedback/ui_feedback.dart';
 
 import '../../../support/fake_feedback.dart';
+import 'package:notehaven_app/l10n/app_localizations.dart';
 
 Future<void> scribble(WidgetTester tester) async {
   final canvas = find.byKey(const Key('drawing-canvas'));
@@ -41,6 +42,8 @@ void main() {
         ProviderScope(
           overrides: [feedbackProvider.overrideWithValue(feedback)],
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Builder(
               builder: (context) => Scaffold(
                 body: Center(
@@ -75,6 +78,8 @@ void main() {
     ) async {
       await open(tester);
       await scribble(tester);
+      await tester.tap(find.byTooltip('Drawing tools'));
+      await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('Highlighter'));
       await tester.tap(find.byTooltip('Clear drawing'));
       await tester.pump(const Duration(milliseconds: 500));
@@ -89,6 +94,7 @@ void main() {
       expect(feedback.events, [
         FeedbackEvent.strokeStart,
         FeedbackEvent.strokeEnd,
+        FeedbackEvent.tap,
         FeedbackEvent.select,
         FeedbackEvent.delete,
         FeedbackEvent.undo,
@@ -160,6 +166,10 @@ void main() {
     testWidgets('tools are labeled for screen readers', (tester) async {
       final handle = tester.ensureSemantics();
       await open(tester);
+      await tester.tap(find.byTooltip('Drawing tools'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Pen')); // active tool again -> options
+      await tester.pumpAndSettle();
       expect(find.bySemanticsLabel(RegExp('Color red')), findsOneWidget);
       expect(find.byTooltip('Pen'), findsOneWidget);
       expect(find.byTooltip('Eraser (removes whole strokes)'), findsOneWidget);

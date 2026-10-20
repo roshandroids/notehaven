@@ -88,6 +88,13 @@ void main() {
   testWidgets('swipe Copy duplicates the note', (tester) async {
     await pumpApp(tester);
     await addNote(tester, 'Plan', 'body');
+    // Swipe actions exist in list view only; grid cards use the long-press menu.
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('List view'));
+    await tester.pumpAndSettle();
+    await tester.pageBack();
+    await tester.pumpAndSettle();
     await tester.drag(find.text('Plan'), const Offset(-400, 0));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Copy'));
@@ -98,10 +105,20 @@ void main() {
   testWidgets('delete removes the note and undo restores it', (tester) async {
     await pumpApp(tester);
     await addNote(tester, 'Temp', 'x');
+    // Swipe actions exist in list view only; grid cards use the long-press menu.
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('List view'));
+    await tester.pumpAndSettle();
+    await tester.pageBack();
+    await tester.pumpAndSettle();
     await tester.drag(find.text('Temp'), const Offset(-400, 0));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));
-    await tester.pumpAndSettle();
+    // Not pumpAndSettle: the snackbar auto-dismisses after 4s.
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 300));
+    }
     expect(find.text('Temp'), findsNothing);
     await tester.tap(find.text('Undo'));
     await tester.pumpAndSettle();
@@ -123,7 +140,10 @@ void main() {
     await tester.longPress(find.text('Groceries'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete note'));
-    await tester.pumpAndSettle();
+    // Not pumpAndSettle: the snackbar auto-dismisses after 4s.
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 300));
+    }
     expect(find.text('Groceries'), findsNothing);
     expect(find.text('Note deleted'), findsOneWidget);
 

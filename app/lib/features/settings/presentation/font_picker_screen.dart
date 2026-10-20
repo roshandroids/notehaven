@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../shared/feedback/ui_feedback.dart';
 import '../../../shared/widgets/search_input.dart';
 import 'settings_providers.dart';
+import '../../../l10n/l10n.dart';
 
 /// Popular families shown with a live preview. Entries missing from the
 /// installed google_fonts version are dropped at runtime.
@@ -54,6 +55,34 @@ class _FontPickerScreenState extends ConsumerState<FontPickerScreen> {
       .toList(growable: false);
 
   String _query = '';
+  final _scroll = ScrollController();
+  final _searchFocus = FocusNode();
+
+  /// True once the search field has scrolled out of view.
+  final _searchHidden = ValueNotifier(false);
+
+  @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(() => _searchHidden.value = _scroll.offset > 72);
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    _searchFocus.dispose();
+    _searchHidden.dispose();
+    super.dispose();
+  }
+
+  Future<void> _jumpToSearch() async {
+    await _scroll.animateTo(
+      0,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+    );
+    _searchFocus.requestFocus();
+  }
 
   List<String> get _results {
     final q = _query.trim().toLowerCase();
@@ -69,55 +98,80 @@ class _FontPickerScreenState extends ConsumerState<FontPickerScreen> {
     final preview = _query.trim().isEmpty;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Font')),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: SearchInput(
-                  hintText: 'Search ${_all.length} Google Fonts',
-                  onChanged: (v) => setState(() => _query = v),
+          child: CustomScrollView(
+            controller: _scroll,
+            slivers: [
+              SliverAppBar(
+                pinned: true,
+                title: Text(context.l10n.font),
+                actions: [
+                  ValueListenableBuilder(
+                    valueListenable: _searchHidden,
+                    builder: (context, hidden, _) => AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      child: hidden
+                          ? Padding(
+                              key: const ValueKey('search-action'),
+                              padding: const EdgeInsets.only(right: 12),
+                              child: IconButton.filledTonal(
+                                tooltip: context.l10n.searchFonts,
+                                icon: const Icon(Icons.search),
+                                onPressed: _jumpToSearch,
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                  ),
+                ],
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: SearchInput(
+                    focusNode: _searchFocus,
+                    hintText: context.l10n.searchGoogleFonts(_all.length),
+                    onChanged: (v) => setState(() => _query = v),
+                  ),
                 ),
               ),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: results.length + (preview ? 1 : 0),
-                  itemBuilder: (context, i) {
-                    if (preview && i == 0) {
-                      return ListTile(
-                        title: const Text('System default'),
-                        trailing: selected == null
-                            ? const Icon(Icons.check_circle)
-                            : null,
-                        onTap: () {
-                          ref.read(feedbackProvider).play(FeedbackEvent.select);
-                          controller.setFont(null);
-                        },
-                      );
-                    }
-                    final family = results[i - (preview ? 1 : 0)];
+              SliverList.separated(
+                separatorBuilder: (_, _) => const Divider(),
+                itemCount: results.length + (preview ? 1 : 0),
+                itemBuilder: (context, i) {
+                  if (preview && i == 0) {
                     return ListTile(
-                      key: ValueKey(family),
-                      title: Text(family),
-                      subtitle: preview
-                          ? Text(
-                              'The quick brown fox jumps over the lazy dog',
-                              style: GoogleFonts.getFont(family),
-                            )
-                          : null,
-                      trailing: selected == family
+                      title: Text(context.l10n.systemDefault),
+                      trailing: selected == null
                           ? const Icon(Icons.check_circle)
                           : null,
                       onTap: () {
                         ref.read(feedbackProvider).play(FeedbackEvent.select);
-                        controller.setFont(family);
+                        controller.setFont(null);
                       },
                     );
-                  },
-                ),
+                  }
+                  final family = results[i - (preview ? 1 : 0)];
+                  return ListTile(
+                    key: ValueKey(family),
+                    title: Text(family),
+                    subtitle: preview
+                        ? Text(
+                            context.l10n.fontPreview,
+                            style: GoogleFonts.getFont(family),
+                          )
+                        : null,
+                    trailing: selected == family
+                        ? const Icon(Icons.check_circle)
+                        : null,
+                    onTap: () {
+                      ref.read(feedbackProvider).play(FeedbackEvent.select);
+                      controller.setFont(family);
+                    },
+                  );
+                },
               ),
             ],
           ),

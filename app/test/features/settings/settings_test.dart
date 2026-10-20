@@ -9,6 +9,7 @@ import 'package:notehaven_app/app/feedback_wiring.dart';
 import 'package:notehaven_app/shared/feedback/ui_feedback.dart';
 import 'package:notehaven_app/app/theme/app_theme.dart';
 import 'package:notehaven_app/features/notes/data/in_memory_note_repository.dart';
+import 'package:notehaven_app/features/notes/presentation/note_actions.dart';
 import 'package:notehaven_app/features/notes/presentation/note_providers.dart';
 import 'package:notehaven_app/features/settings/data/in_memory_settings_repository.dart';
 import 'package:notehaven_app/features/settings/data/prefs_settings_repository.dart';
@@ -103,6 +104,8 @@ void main() {
           hapticsEnabled: false,
           soundsEnabled: true,
           motion: MotionPreference.reduced,
+          textScale: 1.2,
+          localeCode: 'es',
         ),
       );
       final loaded = (await PrefsSettingsRepository.open()).load();
@@ -112,6 +115,8 @@ void main() {
       expect(loaded.hapticsEnabled, isFalse);
       expect(loaded.soundsEnabled, isTrue);
       expect(loaded.motion, MotionPreference.reduced);
+      expect(loaded.textScale, 1.2);
+      expect(loaded.localeCode, 'es');
     });
   });
 
@@ -154,12 +159,24 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Appearance'));
+    await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
 
     expect(container.read(feedbackPrefsProvider).sounds, isFalse);
+    final scroll = find.byType(Scrollable).first;
+    await tester.scrollUntilVisible(
+      find.text('Sounds'),
+      200,
+      scrollable: scroll,
+    );
     await tester.tap(find.text('Sounds'));
     await tester.tap(find.text('Haptic feedback'));
+    await tester.scrollUntilVisible(
+      find.text('Reduced'),
+      200,
+      scrollable: scroll,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Reduced'));
     await tester.pumpAndSettle();
 
@@ -187,19 +204,73 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Appearance'));
+    await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
 
     final target = FlexScheme.values.firstWhere(
       (s) => s != FlexScheme.custom && s.name != AppSettings.defaultSchemeName,
     );
+    await tester.tap(find.text('Color theme'));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(Key('scheme-${target.name}')));
     await tester.pumpAndSettle();
 
     expect(settingsRepo.settings.schemeName, target.name);
 
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
     await tester.tap(find.text('Dark'));
     await tester.pumpAndSettle();
     expect(settingsRepo.settings.themePreference, ThemePreference.dark);
+  });
+
+  testWidgets('picking a language switches the UI and persists', (
+    tester,
+  ) async {
+    final settingsRepo = InMemorySettingsRepository();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          noteRepositoryProvider.overrideWithValue(InMemoryNoteRepository()),
+          settingsRepositoryProvider.overrideWithValue(settingsRepo),
+        ],
+        child: const App(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Language'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Español'));
+    await tester.pumpAndSettle();
+
+    expect(settingsRepo.settings.localeCode, 'es');
+    expect(find.text('Idioma'), findsOneWidget);
+    expect(find.text('Ajustes'), findsOneWidget);
+
+    await tester.tap(find.text('Idioma'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Predeterminado del sistema').last);
+    await tester.pumpAndSettle();
+    expect(settingsRepo.settings.localeCode, isNull);
+  });
+
+  group('NoteActions.deleteAll', () {
+    test('deletes every note and returns them for undo', () async {
+      final repo = InMemoryNoteRepository();
+      await repo.create('a', 'x');
+      await repo.create('b', 'y');
+      final actions = NoteActions(repo);
+      final deleted = await actions.deleteAll();
+      expect(deleted, hasLength(2));
+      expect((await repo.watch().first).fold((l) => l, (_) => []), isEmpty);
+      for (final n in deleted) {
+        await actions.restore(n);
+      }
+      expect((await repo.watch().first).fold((l) => l.length, (_) => 0), 2);
+    });
   });
 }

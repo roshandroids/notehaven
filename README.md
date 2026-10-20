@@ -1,4 +1,4 @@
-# Notehaven
+# Note Haven
 
 An offline-first notes app and reference architecture for Flutter. Targets iOS, Android, web, macOS, Windows and Linux.
 Use it as a **GitHub template** for your own apps, or read it to learn a layered, rule-checked Flutter structure.
