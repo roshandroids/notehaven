@@ -13,8 +13,9 @@ import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../shared/feedback/ui_feedback.dart';
-import '../../../app/theme/tokens.dart';
 import '../../../shared/layout/layout.dart';
+import '../../../shared/layout/view_mode.dart';
+import '../../../shared/theme/tokens.dart';
 import '../../../shared/widgets/illustration.dart';
 import '../../../shared/widgets/search_input.dart';
 import '../domain/note.dart';

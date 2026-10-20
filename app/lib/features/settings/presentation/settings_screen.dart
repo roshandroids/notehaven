@@ -6,10 +6,9 @@ import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../app/theme/app_theme.dart';
 import '../../../shared/feedback/ui_feedback.dart';
-import '../../notes/presentation/note_actions.dart';
-import '../../notes/presentation/note_providers.dart';
+import '../../../shared/layout/view_mode.dart';
+import '../../../shared/theme/schemes.dart';
 import '../domain/app_settings.dart';
 import '../../../shared/crash/crash_log.dart';
 import '../../../shared/feedback/custom_sounds.dart';
@@ -329,7 +328,7 @@ class _DeleteAllTile extends ConsumerWidget {
       title: Text(l10n.deleteAllNotes),
       subtitle: Text(l10n.deleteAllSubtitle),
       onTap: () async {
-        final actions = ref.read(noteActionsProvider);
+        final maintenance = ref.read(notesMaintenanceProvider);
         final messenger = ScaffoldMessenger.of(context);
         final ok = await showDialog<bool>(
           context: context,
@@ -353,21 +352,17 @@ class _DeleteAllTile extends ConsumerWidget {
           ),
         );
         if (ok != true) return;
-        final deleted = await actions.deleteAll();
+        final deleted = await maintenance.deleteAll();
         ref.invalidate(storageUsageProvider);
         messenger
           ..hideCurrentSnackBar()
           ..showSnackBar(
             SnackBar(
-              content: Text(l10n.notesDeleted(deleted.length)),
+              content: Text(l10n.notesDeleted(deleted)),
               persist: false,
               action: SnackBarAction(
                 label: l10n.undo,
-                onPressed: () async {
-                  for (final n in deleted) {
-                    await actions.restore(n);
-                  }
-                },
+                onPressed: maintenance.undoDeleteAll,
               ),
             ),
           );

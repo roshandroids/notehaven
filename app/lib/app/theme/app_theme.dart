@@ -5,8 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../features/settings/domain/app_settings.dart';
-import 'tokens.dart';
 import '../../features/settings/presentation/settings_providers.dart';
+import '../../shared/theme/schemes.dart';
+import '../../shared/theme/tokens.dart';
 
 /// Light and dark [ThemeData] for one [AppSettings] value.
 class AppThemes {
@@ -14,15 +15,6 @@ class AppThemes {
 
   final ThemeData light;
   final ThemeData dark;
-}
-
-/// Maps a stored scheme name to a [FlexScheme]; unknown names fall back to
-/// the default so a stale preference never crashes the app.
-FlexScheme flexSchemeFor(String name) {
-  final scheme = FlexScheme.values.asNameMap()[name];
-  return scheme == null || scheme == FlexScheme.custom
-      ? FlexScheme.indigo
-      : scheme;
 }
 
 /// Builds both themes from [settings]. Fonts that are not Google Fonts fall

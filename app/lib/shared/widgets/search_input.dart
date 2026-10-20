@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../app/theme/tokens.dart';
+import '../theme/tokens.dart';
 import '../../l10n/l10n.dart';
 
 /// Rounded search field with a clear button while it has text. Built on

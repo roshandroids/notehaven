@@ -39,16 +39,3 @@ final noteProvider = FutureProvider.autoDispose.family<Note?, String>((
   final result = await ref.watch(noteRepositoryProvider).get(id);
   return result.fold<Note?>((note) => note, (f) => throw f);
 });
-
-/// Grid (staggered cards) or one-column list on the notes pane.
-// shortcut: lives for the session only, persist it in settings if it should survive restarts.
-class GridViewMode extends Notifier<bool> {
-  @override
-  bool build() => true;
-
-  /// Flips between grid and list.
-  void toggle() => state = !state;
-}
-
-/// True for the staggered grid, false for the one-column list.
-final gridViewProvider = NotifierProvider<GridViewMode, bool>(GridViewMode.new);
